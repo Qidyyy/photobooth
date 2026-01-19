@@ -1,3 +1,5 @@
+import { LAYOUT_CONFIG, getFormattedDate } from "./layout-config";
+
 export type LayoutType = 'grid' | 'strip';
 
 export async function generateCompositeImage(photos: string[], filter: FilterType, backgroundColor: string = '#f5f5f4', layout: LayoutType = 'strip', note?: string): Promise<string> {
@@ -8,23 +10,39 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error("Could not get canvas context");
 
-  // Settings
-  const photoWidth = 640;
-  const photoHeight = 480;
-  const padding = 40;
-  const bottomBannerHeight = 100;
+  // Settings from Config
+  const { photoWidth, photoHeight, padding, bottomBannerHeight, logoHeight, gap, titleFontSize, dateFontSize } = LAYOUT_CONFIG;
   
   const cols = layout === 'grid' ? 2 : 1;
   const rows = Math.ceil(photos.length / cols);
 
   // Calculate canvas size
+  // rows + 1 padding would include a bottom padding. We remove the bottom padding to tighten the footer space.
   canvas.width = (photoWidth * cols) + (padding * (cols + 1));
-  canvas.height = (photoHeight * rows) + (padding * (rows + 1)) + bottomBannerHeight;
+  canvas.height = (photoHeight * rows) + (padding * rows) + padding + bottomBannerHeight; 
+  // Wait, `padding * rows` for 1 row = 40. That's top padding.
+  // For 2 rows = 80. Top + Mid.
+  // So using `padding * (rows + 1)` was Top + Mid + Bottom.
+  // We want to remove Bottom. So `padding * rows` is Top + Mid? 
+  // Wait.
+  // Row 0 Y = padding.
+  // Row 1 Y = padding + height + padding.
+  // Height after Row 1 = padding + height + padding + height.
+  // This is `height*2 + padding*2`.
+  // `rows=2`. `padding*2` matches.
+  
+  // So yes, `padding * rows` covers Top + Mid.
+  // BUT `canvas.height` needs to cover `top` padding as well? 
+  // `padding * rows` IS `top + mid` for `cols=1`.
+  // Let's re-verify. rows=1. `padding * 1` = 40. Correct (Top).
+  // rows=2. `padding * 2` = 80. Correct (Top + Mid).
+  
+  // So `canvas.height = (photoHeight * rows) + (padding * rows) + bottomBannerHeight` is correct.
+  canvas.height = (photoHeight * rows) + (padding * rows) + bottomBannerHeight; 
 
   // Background
   ctx.fillStyle = backgroundColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   // Apply Filter to Context
   // ctx.filter is supported in most modern browsers
   let filterString = 'none';
@@ -60,8 +78,6 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
     const y = padding + (row * (photoHeight + padding));
     
     // Draw white border/frame around photo
-    // We need to reset filter for the border if we wanted it crisp, but sticking to simple for now
-    // Actually, let's draw the image
     ctx.drawImage(img, x, y, photoWidth, photoHeight);
   });
 
@@ -69,25 +85,43 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
   ctx.filter = 'none';
 
   // Branding
-  // Simple contrast check: if background is dark, use light text.
-  // This is a naive heuristic (checking for black or dark hex/rgb would be better),
-  // but for our presets we can just default to a smart choice or check specific values.
-  // For now, let's assume if it's black or the vintage dark (#745e59) we want white text.
   const isDark = backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59';
+  const dateStr = getFormattedDate();
   
-  ctx.fillStyle = isDark ? '#f5f5f4' : '#1c1917'; // stone-100 vs stone-900
-  ctx.font = 'bold 48px "Playfair Display", serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.fillStyle = isDark ? LAYOUT_CONFIG.colors.textOnDark : LAYOUT_CONFIG.colors.textOnLight;
   
   const centerX = canvas.width / 2;
-  const contentBottom = (photoHeight * rows) + (padding * (rows + 1));
-  const bannerCenterY = contentBottom + (bottomBannerHeight / 2) - 10; 
+  // contentBottom matches the height calculation above (start of banner)
+  const contentBottom = (photoHeight * rows) + (padding * rows);
+  
+  // Dynamic Group Centering
+  // We want to center the group [Logo + Gap + Date] vertically in the banner
+  const totalContentHeight = logoHeight + gap + dateFontSize;
+  const groupStartY = contentBottom + (bottomBannerHeight - totalContentHeight) / 2;
+  
+  // Center adjustments for text
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top'; // Use top baseline for easier vertical stacking calculations
 
   const titleText = note && note.trim().length > 0 ? note : null;
   
   if (titleText) {
-      ctx.fillText(titleText, centerX, bannerCenterY);
+      // If note exists, it replaces the logo. We center it similarly.
+      // Note is usually single line, so let's treat it like the logo block
+      ctx.font = `bold ${titleFontSize}px "Playfair Display", serif`;
+      // Recalculate group height with title instead of logo? 
+      // Title is ~80px, Logo is 100px. Let's stick to the same groupStartY for consistency or re-calc.
+      // Let's re-calc for perfection:
+      const noteGroupHeight = titleFontSize + gap + dateFontSize;
+      const noteStartY = contentBottom + (bottomBannerHeight - noteGroupHeight) / 2;
+      
+      ctx.fillText(titleText, centerX, noteStartY);
+      
+      // Draw Date below Note
+      ctx.font = `italic ${dateFontSize}px "Playfair Display", serif`;
+      ctx.fillStyle = isDark ? '#a8a29e' : '#57534e'; 
+      ctx.fillText(dateStr, centerX, noteStartY + titleFontSize + gap);
+
   } else {
       // Draw Logo
       const logoPromise = new Promise<HTMLImageElement>((resolve, reject) => {
@@ -100,44 +134,50 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
       try {
           const logo = await logoPromise;
           
-          // Calculate Logo Dimensions (maintain aspect ratio)
-          // Original ViewBox: 0 0 375 75 -> Ratio: 5:1
-          const logoHeight = 50; 
+          // Calculate Logo Dimensions based on Config height
           const logoWidth = logoHeight * (logo.width / logo.height) || logoHeight * 5; 
           
           const logoX = centerX - (logoWidth / 2);
-          const logoY = bannerCenterY - (logoHeight / 2);
+          const logoY = groupStartY; // Top of logo
 
-          // If dark background, invert logo to make it white (assuming logo is dark/brown)
-          if (isDark) {
-             ctx.filter = 'brightness(0) invert(1)';
-          }
+          // Dark/Brown BG -> Cream #e6dbc6
+          // Light BG -> Brown #745e59
+          const targetColor = isDark ? '#e6dbc6' : '#745e59';
 
-          // Add shadow
-          ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetX = 2;
-          ctx.shadowOffsetY = 2;
-
-          ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+          // Use an offscreen canvas to tint the logo
+          const offscreen = document.createElement('canvas');
+          offscreen.width = logoWidth;
+          offscreen.height = logoHeight;
+          const offCtx = offscreen.getContext('2d');
           
-          // Reset shadow and filter
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 0;
+          if (offCtx) {
+              offCtx.drawImage(logo, 0, 0, logoWidth, logoHeight);
+              offCtx.globalCompositeOperation = 'source-in';
+              offCtx.fillStyle = targetColor;
+              offCtx.fillRect(0, 0, logoWidth, logoHeight);
+              
+              // Draw targeted logo
+              ctx.drawImage(offscreen, logoX, logoY, logoWidth, logoHeight);
+          } else {
+              // Fallback if offscreen context fails (unlikely)
+              ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight); 
+          }
+          
           ctx.filter = 'none';
       } catch (e) {
           console.error("Failed to load logo", e);
           // Fallback to text if logo fails
-          ctx.fillText('Photobooth', centerX, bannerCenterY);
+           ctx.font = `bold ${titleFontSize}px "Playfair Display", serif`;
+          const fallbackHeight = titleFontSize + gap + dateFontSize;
+          const fallbackStart = contentBottom + (bottomBannerHeight - fallbackHeight) / 2;
+          ctx.fillText('Photobooth', centerX, fallbackStart);
       }
+      
+      // Draw Date below Logo
+      ctx.font = `italic ${dateFontSize}px "Playfair Display", serif`;
+      ctx.fillStyle = isDark ? '#a8a29e' : '#57534e'; 
+      ctx.fillText(dateStr, centerX, groupStartY + logoHeight + gap);
   }
-  
-  ctx.font = 'italic 24px "Playfair Display", serif';
-  ctx.fillStyle = isDark ? '#a8a29e' : '#57534e'; // stone-400 vs stone-600
-  const dateStr = new Date().toLocaleDateString();
-  ctx.fillText(dateStr, centerX, bannerCenterY + 40);
 
   return canvas.toDataURL('image/jpeg', 0.9);
 }

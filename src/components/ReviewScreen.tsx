@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { LayoutType, generateCompositeImage } from "@/lib/photo-generator";
 import { Check } from "lucide-react";
+import { LAYOUT_CONFIG, getFormattedDate } from "@/lib/layout-config";
 
 interface ReviewScreenProps {
   photos: string[];
@@ -37,6 +38,17 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
   const [backgroundColor, setBackgroundColor] = useState<string>(BACKGROUND_COLORS[0].value);
   const [layout] = useState<LayoutType>(initialLayout);
   const [note, setNote] = useState<string>('');
+  
+  // Calculate scale for preview synchronization
+  const { photoWidth, padding } = LAYOUT_CONFIG;
+  const STRIP_CANVAS_WIDTH = photoWidth + (padding * 2);
+  const GRID_CANVAS_WIDTH = (photoWidth * 2) + (padding * 3);
+  const PREVIEW_WIDTH_STRIP = 320;
+  const PREVIEW_WIDTH_GRID = 480;
+
+  const scale = layout === 'strip' 
+    ? PREVIEW_WIDTH_STRIP / STRIP_CANVAS_WIDTH 
+    : PREVIEW_WIDTH_GRID / GRID_CANVAS_WIDTH;
   
   // Default selection based on layout
   const defaultSelectionCount = layout === 'strip' ? 3 : 4;
@@ -102,7 +114,9 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         link.click();
         document.body.removeChild(link);
         
-        onSave?.();
+        // Don't call onSave prop creates a reset (logout) effect. 
+        // We want to stay on this screen.
+        // onSave?.();
     } catch (e) {
         console.error("Failed to generate image", e);
         alert("Failed to save photo. Please try again.");
@@ -124,7 +138,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
           style={{ backgroundColor }}
         >
           <div className={cn(
-              "grid gap-4 mb-8",
+              "grid gap-4 mb-2",
               layout === 'strip' ? "grid-cols-1" : "grid-cols-2"
           )}>
             {selectedPhotos.map((photo, index) => (
@@ -143,40 +157,65 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
           </div>
 
           {/* Footer Banner */}
-          <div className="flex flex-col items-center justify-center gap-2 pb-2">
+          <div 
+            className="flex flex-col items-center justify-center"
+            style={{ 
+                height: LAYOUT_CONFIG.bottomBannerHeight * scale,
+                gap: LAYOUT_CONFIG.gap * scale
+            }}
+          >
              {note && note.trim().length > 0 ? (
-                 <h2 className={cn(
-                     "font-serif text-3xl text-center font-bold",
-                     (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') ? "text-stone-100" : "text-stone-900"
-                 )}>
+                 <h2 
+                    className="font-serif text-center font-bold"
+                    style={{ 
+                        fontSize: LAYOUT_CONFIG.titleFontSize * scale,
+                        color: (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') 
+                            ? LAYOUT_CONFIG.colors.textOnDark 
+                            : LAYOUT_CONFIG.colors.textOnLight
+                    }}
+                 >
                      {note}
                  </h2>
              ) : (
-                 <img 
-                    src="/melphotobooth.svg" 
-                    alt="Mel Photobooth" 
-                    className={cn(
-                        "h-12 w-auto object-contain transition-all duration-300 drop-shadow-md",
-                        (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') && "invert brightness-0"
-                    )}
+                 <div 
+                    className="transition-all duration-300"
+                    style={{
+                        height: LAYOUT_CONFIG.logoHeight * scale,
+                        width: (LAYOUT_CONFIG.logoHeight * scale) * 5, // Asptect ratio 5:1
+                        backgroundColor: (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') 
+                            ? '#e6dbc6' 
+                            : '#745e59',
+                        maskImage: 'url(/melphotobooth.svg)',
+                        WebkitMaskImage: 'url(/melphotobooth.svg)',
+                        maskRepeat: 'no-repeat',
+                        WebkitMaskRepeat: 'no-repeat',
+                        maskPosition: 'center',
+                        WebkitMaskPosition: 'center',
+                        maskSize: 'contain',
+                        WebkitMaskSize: 'contain'
+                    }}
                  />
              )}
              
-             <p className={cn(
-                 "font-serif italic text-sm",
-                 (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') ? "text-stone-400" : "text-stone-500"
-             )}>
-                 {new Date().toLocaleDateString()}
+             <p 
+                className={cn(
+                    "font-serif italic",
+                    (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') ? "text-stone-400" : "text-stone-500"
+                )}
+                style={{ fontSize: LAYOUT_CONFIG.dateFontSize * scale }}
+             >
+                 {getFormattedDate()}
              </p>
           </div>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="w-full max-w-md flex flex-col gap-4 bg-white/80 backdrop-blur-sm p-6 rounded-xl border border-stone-200 shadow-xl">
+      <div className="w-full max-w-md flex flex-col bg-white/80 backdrop-blur-sm p-6 rounded-xl border border-stone-200 shadow-xl">
         
-        <div className="space-y-2">
-            <h3 className="font-serif text-lg text-[#745e59] border-b border-stone-100 pb-1 text-center">𝄞⨾𓍢ִ໋⋆𝓈𝑒𝓁𝑒𝒸𝓉 𝓅𝒽𝑜𝓉𝑜𝓈 🎞️ 𖥔 ݁ ˖</h3>
+        {/* Select Photos Section */}
+        <div className="space-y-2 border-b border-stone-100 pb-4 mb-4">
+            <h3 className="font-serif text-lg text-[#745e59] text-center">𝄞⨾𓍢ִ໋⋆𝓈𝑒𝓁𝑒𝒸𝓉 𝓅𝒽𝑜𝓉𝑜𝓈 🎞️ 𖥔 ݁ ˖</h3>
             <div className="grid grid-cols-4 gap-2">
                 {photos.map((photo, index) => {
                     const isSelected = selectedPhotos.includes(photo);
@@ -210,9 +249,10 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
             </p>
         </div>
 
-        <div className="space-y-3">
-            <div>
-                <h3 className="font-serif text-lg text-[#745e59] border-b border-stone-100 pb-1 text-center">𝒻𝒾𝓁𝓉𝑒𝓇 🪄⊹₊⟡⋆</h3>
+        <div className="space-y-4">
+            {/* Filter Section */}
+            <div className="border-b border-stone-100 pb-4">
+                <h3 className="font-serif text-lg text-[#745e59] text-center">𝒻𝒾𝓁𝓉𝑒𝓇 🪄⊹₊⟡⋆</h3>
                 <div className="flex flex-wrap gap-2 justify-center py-2">
                         {FILTERS.map((filter) => (
                         <Button
@@ -231,8 +271,9 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
                 </div>
             </div>
 
-            <div>
-                <h3 className="font-serif text-lg text-[#745e59] border-b border-stone-100 pb-1 text-center">𝒸𝑜𝓁𝑜𝓇 ✩ ₊₊˚🌈˚🫧⊹♡</h3>
+            {/* Color Section */}
+            <div className="border-b border-stone-100 pb-4">
+                <h3 className="font-serif text-lg text-[#745e59] text-center">𝒸𝑜𝓁𝑜𝓇 ✩ ₊₊˚🌈˚🫧⊹♡</h3>
                 <div className="flex flex-wrap gap-3.5 justify-center py-2">
                     {BACKGROUND_COLORS.map((color) => (
                         <button
@@ -249,38 +290,49 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
                 </div>
             </div>
 
-
+            {/* Note Section */}
             <div>
-                <h3 className="font-serif text-lg text-[#745e59] border-b border-stone-100 pb-1 text-center">𝓃𝑜𝓉𝑒 ✎ ̼</h3>
-                <div className="py-2">
+                <h3 className="font-serif text-lg text-[#745e59] text-center">𝓃𝑜𝓉𝑒 ✎ ̼</h3>
+                <div className="py-2 flex justify-center">
                     <input
                         type="text"
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
-                        placeholder="Enter a custom note..."
+                        placeholder="𝓉𝓎𝓅𝑒 𝒽𝑒𝓇𝑒..."
                         maxLength={20}
-                        className="w-full text-center bg-transparent border-b-2 border-stone-200 focus:border-[#745e59] outline-none px-2 py-1 font-serif text-[#745e59] placeholder:text-stone-300 transition-colors"
+                        className="w-3/4 text-center bg-transparent border border-stone-200 rounded-md focus:border-[#745e59] focus:ring-1 focus:ring-[#745e59] outline-none px-4 py-2 font-serif text-[#745e59] placeholder:text-stone-300 transition-all"
                     />
                 </div>
             </div>
         </div>
 
 
-        <div className="mt-4 pt-4 border-t border-stone-100 flex gap-3">
+        <div className="mt-4 pt-4 border-t border-stone-100 flex flex-col gap-3">
+            <div className="flex gap-3 w-full">
                 <Button 
-                onClick={onRetake} 
-                variant="outline"
-                className="btn-minimal px-8 py-7 text-lg"
-                disabled={isGenerating}
-            >
-                ↩ 𝓇𝑒𝓉𝒶𝓀𝑒
-            </Button>
+                    onClick={onRetake} 
+                    variant="outline"
+                    className="btn-minimal flex-1 py-7 text-lg"
+                    disabled={isGenerating}
+                >
+                    ↩ 𝓇𝑒𝓉𝒶𝓀𝑒
+                </Button>
+                <Button 
+                    onClick={handleSave} 
+                    className="btn-minimal flex-1 py-7 text-lg"
+                    disabled={isGenerating}
+                >
+                    {isGenerating ? "Processing..." : "‧₊˚ ☁️⋅ 𝓈𝒶𝓋𝑒 ♡"}
+                </Button>
+            </div>
+            
             <Button 
-                onClick={handleSave} 
-                className="btn-minimal px-10 py-7 text-lg"
+                onClick={onRetake}
+                variant="ghost"
+                className="w-full font-serif text-[#745e59] hover:bg-[#745e59]/10"
                 disabled={isGenerating}
             >
-                {isGenerating ? "Processing..." : "‧₊˚ ☁️⋅ 𝓈𝒶𝓋𝑒 ♡🪐༘⋆"}
+                ✨ 𝓈𝓉𝒶𝓇𝓉 𝓃𝑒𝓌 𝓈𝑒𝓈𝓈𝒾𝑜𝓃 📸
             </Button>
         </div>
       </div>
