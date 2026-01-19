@@ -1,6 +1,7 @@
 import { LAYOUT_CONFIG, getFormattedDate } from "./layout-config";
 
 export type LayoutType = 'grid' | 'strip';
+export type FilterType = 'none' | 'sepia' | 'bw' | 'vintage';
 
 export async function generateCompositeImage(photos: string[], filter: FilterType, backgroundColor: string = '#f5f5f4', layout: LayoutType = 'strip', note?: string): Promise<string> {
   if (photos.length === 0) throw new Error("No photos to generate image from");
