@@ -44,8 +44,8 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
   const { photoWidth, padding } = LAYOUT_CONFIG;
   const STRIP_CANVAS_WIDTH = photoWidth + (padding * 2);
   const GRID_CANVAS_WIDTH = (photoWidth * 2) + (padding * 3);
-  const PREVIEW_WIDTH_STRIP = 320;
-  const PREVIEW_WIDTH_GRID = 480;
+  const PREVIEW_WIDTH_STRIP = 350;
+  const PREVIEW_WIDTH_GRID = 700;
 
   const scale = layout === 'strip' 
     ? PREVIEW_WIDTH_STRIP / STRIP_CANVAS_WIDTH 
@@ -134,7 +134,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         <div 
           className={cn(
               "flex flex-col p-6 rounded-lg shadow-2xl transition-all duration-500 mx-auto bg-stone-50",
-              layout === 'strip' ? "w-[320px]" : "w-[480px]"
+              layout === 'strip' ? "w-[350px]" : "w-[700px]"
           )}
           style={{ backgroundColor }}
         >
