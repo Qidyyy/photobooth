@@ -25,6 +25,7 @@ const FILTERS: { id: FilterType; name: string; class: string }[] = [
 const BACKGROUND_COLORS = [
   { id: 'stone', value: '#f5f5f4', label: 'Stone' },
   { id: 'white', value: '#ffffff', label: 'White' },
+  { id: 'cream', value: '#e6dbc6', label: 'Cream' },
   { id: 'dark', value: '#745e59', label: 'Dark' },
   { id: 'pink', value: '#ffe4e6', label: 'Pink' },
   { id: 'mint', value: '#d1fae5', label: 'Mint' },
@@ -43,8 +44,8 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
   const { photoWidth, padding } = LAYOUT_CONFIG;
   const STRIP_CANVAS_WIDTH = photoWidth + (padding * 2);
   const GRID_CANVAS_WIDTH = (photoWidth * 2) + (padding * 3);
-  const PREVIEW_WIDTH_STRIP = 320;
-  const PREVIEW_WIDTH_GRID = 480;
+  const PREVIEW_WIDTH_STRIP = 350;
+  const PREVIEW_WIDTH_GRID = 700;
 
   const scale = layout === 'strip' 
     ? PREVIEW_WIDTH_STRIP / STRIP_CANVAS_WIDTH 
@@ -133,7 +134,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         <div 
           className={cn(
               "flex flex-col p-6 rounded-lg shadow-2xl transition-all duration-500 mx-auto bg-stone-50",
-              layout === 'strip' ? "w-[320px]" : "w-[480px]"
+              layout === 'strip' ? "w-[350px]" : "w-[700px]"
           )}
           style={{ backgroundColor }}
         >
@@ -215,7 +216,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         
         {/* Select Photos Section */}
         <div className="space-y-2 border-b border-stone-100 pb-4 mb-4">
-            <h3 className="font-serif text-lg text-[#745e59] text-center">𝄞⨾𓍢ִ໋⋆𝓈𝑒𝓁𝑒𝒸𝓉 𝓅𝒽𝑜𝓉𝑜𝓈 🎞️ 𖥔 ݁ ˖</h3>
+            <h3 className="font-serif text-lg text-[#745e59] text-center py-2">𝄞⨾𓍢ִ໋⋆𝓈𝑒𝓁𝑒𝒸𝓉 𝓅𝒽𝑜𝓉𝑜𝓈 🎞️ 𖥔 ݁ ˖</h3>
             <div className="grid grid-cols-4 gap-2">
                 {photos.map((photo, index) => {
                     const isSelected = selectedPhotos.includes(photo);
@@ -273,8 +274,8 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
 
             {/* Color Section */}
             <div className="border-b border-stone-100 pb-4">
-                <h3 className="font-serif text-lg text-[#745e59] text-center">𝒸𝑜𝓁𝑜𝓇 ✩ ₊₊˚🌈˚🫧⊹♡</h3>
-                <div className="flex flex-wrap gap-3.5 justify-center py-2">
+                <h3 className="font-serif text-lg text-[#745e59] text-center">𝒸𝑜𝓁𝑜𝓇 ✩ ₊˚˚🫧⊹♡</h3>
+                <div className="flex flex-wrap gap-3 justify-center py-2">
                     {BACKGROUND_COLORS.map((color) => (
                         <button
                             key={color.id}
@@ -292,7 +293,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
 
             {/* Note Section */}
             <div>
-                <h3 className="font-serif text-lg text-[#745e59] text-center">𝓃𝑜𝓉𝑒 ✎ ̼</h3>
+                <h3 className="font-serif text-lg text-[#745e59] text-center">𝓃𝑜𝓉𝑒 ✎𓂃.☘︎ ݁˖</h3>
                 <div className="py-2 flex justify-center">
                     <input
                         type="text"
