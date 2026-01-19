@@ -216,7 +216,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         
         {/* Select Photos Section */}
         <div className="space-y-2 border-b border-stone-100 pb-4 mb-4">
-            <h3 className="font-serif text-lg text-[#745e59] text-center">𝄞⨾𓍢ִ໋⋆𝓈𝑒𝓁𝑒𝒸𝓉 𝓅𝒽𝑜𝓉𝑜𝓈 🎞️ 𖥔 ݁ ˖</h3>
+            <h3 className="font-serif text-lg text-[#745e59] text-center py-2">𝄞⨾𓍢ִ໋⋆𝓈𝑒𝓁𝑒𝒸𝓉 𝓅𝒽𝑜𝓉𝑜𝓈 🎞️ 𖥔 ݁ ˖</h3>
             <div className="grid grid-cols-4 gap-2">
                 {photos.map((photo, index) => {
                     const isSelected = selectedPhotos.includes(photo);
