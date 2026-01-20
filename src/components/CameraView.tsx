@@ -38,8 +38,8 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
         const ctx = canvas.getContext("2d");
         if (!ctx) return null;
         
-        // Apply B&W filter
-        ctx.filter = "grayscale(1) contrast(1.1)";
+        // Apply B&W filter - REMOVED for default normal mode
+        // ctx.filter = "grayscale(1) contrast(1.1)";
         
         // Flip horizontally to match mirrored video
         ctx.translate(canvas.width, 0);
@@ -86,47 +86,50 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
     }
 
     return (
-      <div className="relative w-full max-w-4xl mx-auto bg-[#745e59] rounded-lg overflow-hidden shadow-2xl aspect-video group">
-        {(!stream || isLoading) && (
-          <div className="absolute inset-0 flex items-center justify-center text-white/50 font-serif">
-            {isLoading ? "Requesting camera access..." : "Waiting for camera..."}
+      <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
+        <div className="relative w-full bg-[#745e59] rounded-lg overflow-hidden shadow-2xl aspect-video group">
+          {(!stream || isLoading) && (
+            <div className="absolute inset-0 flex items-center justify-center text-white/50 font-serif">
+              {isLoading ? "Requesting camera access..." : "Waiting for camera..."}
+            </div>
+          )}
+          
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover transform -scale-x-100"
+          />
+
+          <CountdownOverlay count={countdown} />
+          <FlashEffect trigger={isCapturing} />
+
+          {/* Controls Overlay - Close Button */}
+          <div className="absolute inset-0 p-6 flex flex-col justify-between pointer-events-none">
+             <div className="flex justify-end pointer-events-auto">
+               <Button 
+                  onClick={onClose}
+                  variant="ghost" 
+                  className="text-white hover:bg-white/20 hover:text-white rounded-full bg-[#745e59]/20 backdrop-blur-sm h-12 w-12 p-0"
+                >
+                  ✕
+                </Button>
+             </div>
           </div>
-        )}
-        
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover transform -scale-x-100 filter-bw"
-        />
+        </div>
 
-        <CountdownOverlay count={countdown} />
-        <FlashEffect trigger={isCapturing} />
-
-        {/* Controls Overlay */}
-        <div className="absolute inset-0 p-6 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-           <div className="flex justify-end pointer-events-auto">
-             <Button 
-                onClick={onClose}
-                variant="ghost" 
-                className="text-white hover:bg-white/20 hover:text-white rounded-full bg-[#745e59]/20 backdrop-blur-sm h-12 w-12 p-0"
+        {/* External Controls - Take Photo Button */}
+        <div className="flex justify-center pb-8">
+          {stream && !isLoading && !isCapturing && countdown === 0 && (
+              <Button
+                onClick={onStartSession}
+                size="lg"
+                className="btn-minimal font-serif text-lg px-12 py-8"
               >
-                ✕
+                (｡ •̀  ᵕ 📷) ✨
               </Button>
-           </div>
-           
-           <div className="flex justify-center pointer-events-auto">
-             {stream && !isLoading && !isCapturing && countdown === 0 && (
-                 <Button
-                    onClick={onStartSession}
-                    size="lg"
-                    className="font-serif text-lg px-8 py-6 rounded-full bg-white text-[#745e59] hover:bg-stone-200 shadow-xl"
-                 >
-                    Take Photos
-                 </Button>
-             )}
-           </div>
+          )}
         </div>
       </div>
     );
