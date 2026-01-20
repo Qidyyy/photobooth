@@ -1,4 +1,5 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { type SessionStatus } from "@/hooks/usePhotoSession";
 import { Button } from "@/components/ui/button";
 import { CountdownOverlay } from "./CountdownOverlay";
 import { FlashEffect } from "./FlashEffect";
@@ -15,10 +16,11 @@ interface CameraViewProps {
   countdown?: number;
   isCapturing?: boolean;
   onStartSession?: () => void;
+  photosTaken?: number;
 }
 
 export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
-  ({ stream, error, isLoading, onClose, countdown = 0, isCapturing = false, onStartSession }, ref) => {
+  ({ stream, error, isLoading, onClose, countdown = 0, isCapturing = false, onStartSession, photosTaken = 0, status }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useImperativeHandle(ref, () => ({
@@ -86,7 +88,7 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
     }
 
     return (
-      <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
+      <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 px-4">
         <div className="relative w-full bg-[#745e59] rounded-lg overflow-hidden shadow-2xl aspect-video group">
           {(!stream || isLoading) && (
             <div className="absolute inset-0 flex items-center justify-center text-white/50 font-serif">
@@ -94,6 +96,8 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
             </div>
           )}
           
+
+
           <video
             ref={videoRef}
             autoPlay
@@ -103,15 +107,24 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
           />
 
           <CountdownOverlay count={countdown} />
+
+          {status === 'getting-ready' && (
+             <div className="absolute top-1/3 left-0 right-0 flex justify-center pointer-events-none z-30">
+                <div className="bg-black/40 backdrop-blur-md text-white px-6 py-3 rounded-full font-serif text-xl border border-white/20 animate-in fade-in zoom-in-95 duration-300">
+                    Get ready for {(photosTaken + 1) === 1 ? '1st' : (photosTaken + 1) === 2 ? '2nd' : (photosTaken + 1) === 3 ? '3rd' : `${photosTaken + 1}th`} photo...
+                </div>
+             </div>
+          )}
+
           <FlashEffect trigger={isCapturing} />
 
           {/* Controls Overlay - Close Button */}
-          <div className="absolute inset-0 p-6 flex flex-col justify-between pointer-events-none">
+          <div className="absolute inset-0 p-4 flex flex-col justify-between pointer-events-none">
              <div className="flex justify-end pointer-events-auto">
                <Button 
                   onClick={onClose}
                   variant="ghost" 
-                  className="text-white hover:bg-white/20 hover:text-white rounded-full bg-[#745e59]/20 backdrop-blur-sm h-12 w-12 p-0"
+                  className="text-white hover:bg-white/20 hover:text-white rounded-full bg-[#745e59]/20 backdrop-blur-sm h-10 w-10 p-0"
                 >
                   ✕
                 </Button>
@@ -120,15 +133,20 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
         </div>
 
         {/* External Controls - Take Photo Button */}
-        <div className="flex justify-center pb-8">
-          {stream && !isLoading && !isCapturing && countdown === 0 && (
+        <div className="flex flex-col items-center gap-2 pb-4">
+          {stream && !isLoading && status === 'idle' && (
+            <>
               <Button
                 onClick={onStartSession}
                 size="lg"
-                className="btn-minimal font-serif text-lg px-12 py-8"
+                className="btn-minimal font-serif text-lg px-8 py-6"
               >
                 (｡ •̀  ᵕ 📷) ✨
               </Button>
+              <p className="text-s text-stone-500 font-serif italic opacity-70">
+                * 𝕥𝕒𝕜𝕖 𝟞 𝕡𝕚𝕔𝕤 𝕒𝕥 𝕠𝕟𝕔𝕖 𝕨𝕚𝕥𝕙 𝕒 𝟛-𝕤𝕖𝕔 𝕔𝕠𝕦𝕟𝕥𝕕𝕠𝕨𝕟 𝕗𝕠𝕣 𝕖𝕒𝕔𝕙
+              </p>
+            </>
           )}
         </div>
       </div>
