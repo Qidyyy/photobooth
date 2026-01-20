@@ -111,7 +111,7 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
 
           {status === 'getting-ready' && (
              <div className="absolute top-1/10 left-0 right-0 flex justify-center pointer-events-none z-30">
-                <div className="bg-black/10 backdrop-blur-md text-white px-6 py-3 rounded-full font-serif text-xl animate-in fade-in zoom-in-95 duration-300">
+                <div className="bg-black/10 backdrop-blur-md text-white px-4 py-2 rounded-full font-serif text-md animate-in fade-in zoom-in-95 duration-300">
                     𝕘𝕖𝕥 𝕣𝕖𝕒𝕕𝕪 𝕗𝕠𝕣 {(photosTaken + 1) === 1 ? '𝕗𝕚𝕣𝕤𝕥' : (photosTaken + 1) === 2 ? '𝕤𝕖𝕔𝕠𝕟𝕕' : (photosTaken + 1) === 3 ? '𝕥𝕙𝕚𝕣𝕕' : (photosTaken + 1) === 4 ? '𝕗𝕠𝕦𝕣𝕥𝕙' : (photosTaken + 1) === 5 ? '𝕗𝕚𝕗𝕥𝕙' : (photosTaken + 1) === 6 ? '𝕝𝕒𝕤𝕥' : `${photosTaken + 1}`} 𝕡𝕙𝕠𝕥𝕠...
                 </div>
              </div>
@@ -130,6 +130,21 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
                   ✕
                 </Button>
              </div>
+
+             {status !== 'idle' && (
+               <div className="flex justify-center gap-3 pb-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                        i < photosTaken 
+                          ? "bg-white shadow-[0_0_8px_rgba(255,255,240,0.8)] scale-110" 
+                          : "bg-white/20 border border-white/50"
+                      }`}
+                    />
+                  ))}
+               </div>
+             )}
           </div>
         </div>
 
