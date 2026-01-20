@@ -21,6 +21,14 @@ export const LAYOUT_CONFIG = {
     textOnDark: '#e6dbc6', 
     // The color of the Note/Date when the background is "Light" (Stone, White, Pink, etc)
     textOnLight: '#745e59',
+  },
+
+  // Dynamic Dimensions Helper
+  getDimensions: (isPortrait: boolean) => {
+    return {
+      width: isPortrait ? 480 : 640,
+      height: isPortrait ? 640 : 480,
+    };
   }
 };
 

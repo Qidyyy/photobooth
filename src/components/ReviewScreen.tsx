@@ -5,6 +5,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { LayoutType, generateCompositeImage } from "@/lib/photo-generator";
 import { LAYOUT_CONFIG, getFormattedDate } from "@/lib/layout-config";
+import { useOrientation } from "@/hooks/useOrientation";
 
 interface ReviewScreenProps {
   photos: string[];
@@ -34,18 +35,25 @@ const BACKGROUND_COLORS = [
   { id: 'purple', value: '#f3e8ff', label: 'Purple' },
 ];
 
+
 export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: ReviewScreenProps) {
+  const { isPortrait } = useOrientation();
   const [activeFilter, setActiveFilter] = useState<FilterType>('none');
   const [backgroundColor, setBackgroundColor] = useState<string>(BACKGROUND_COLORS[0].value);
   const [layout] = useState<LayoutType>(initialLayout);
   const [note, setNote] = useState<string>('');
   
   // Calculate scale for preview synchronization
-  const { photoWidth, padding } = LAYOUT_CONFIG;
+
+  const { padding } = LAYOUT_CONFIG;
+  const { width: photoWidth, height: photoHeight } = LAYOUT_CONFIG.getDimensions(isPortrait);
+  
   const STRIP_CANVAS_WIDTH = photoWidth + (padding * 2);
   const GRID_CANVAS_WIDTH = (photoWidth * 2) + (padding * 3);
-  const PREVIEW_WIDTH_STRIP = 350;
-  const PREVIEW_WIDTH_GRID = 700;
+  
+  // Adjust preview container widths for mobile/portrait
+  const PREVIEW_WIDTH_STRIP = isPortrait ? 300 : 350;
+  const PREVIEW_WIDTH_GRID = isPortrait ? 350 : 700;
 
   const scale = layout === 'strip' 
     ? PREVIEW_WIDTH_STRIP / STRIP_CANVAS_WIDTH 
@@ -74,7 +82,6 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         // Requirement said: "Review screen will default to the first 3 or 4 photos, and allow the user to swap them out."
         // Let's implement swap mode: if full, replace the ... last one? or prevent adding?
         // Let's prevent adding if full, showing a message or just simple replacement logic (remove first added? no that's confusing).
-        // Let's simply: if full, remove the first selected one (FIFO) to make room? Or strictly enforcement.
         // User probably expects to deselect one then select another.
         // But let's try auto-swap: if full, remove the one that is NOT the current one being toggled (obviously).
         // Let's just implement: if (length >= maxPhotos) -> remove the first one from selectedPhotos then add new one.
@@ -106,13 +113,12 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
   const handleSave = async () => {
     setIsGenerating(true);
     try {
-        const dataUrl = await generateCompositeImage(selectedPhotos, activeFilter, backgroundColor, layout, note);
+        const dataUrl = await generateCompositeImage(selectedPhotos, activeFilter, backgroundColor, layout, note, isPortrait);
         
         const link = document.createElement('a');
         link.href = dataUrl;
         link.download = `photobooth-session-${Date.now()}.jpg`;
         document.body.appendChild(link);
-        link.click();
         document.body.removeChild(link);
         
         // Don't call onSave prop creates a reset (logout) effect. 
@@ -134,7 +140,9 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         <div 
           className={cn(
               "flex flex-col p-6 rounded-lg shadow-2xl transition-all duration-500 mx-auto bg-stone-50 max-w-full",
-              layout === 'strip' ? "w-full max-w-[350px]" : "w-full max-w-[700px]"
+              layout === 'strip' ? 
+                  (isPortrait ? "w-full max-w-[320px]" : "w-full max-w-[350px]") : 
+                  (isPortrait ? "w-full max-w-[370px]" : "w-full max-w-[700px]")
           )}
           style={{ backgroundColor }}
         >
@@ -145,7 +153,10 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
             {selectedPhotos.map((photo, index) => (
                 <div 
                 key={index} 
-                className="relative aspect-[4/3] overflow-hidden rounded bg-stone-100 animate-in fade-in zoom-in-95 duration-300 fill-mode-backwards"
+                className={cn(
+                    "relative overflow-hidden rounded bg-stone-100 animate-in fade-in zoom-in-95 duration-300 fill-mode-backwards",
+                    isPortrait ? "aspect-[3/4]" : "aspect-[4/3]"
+                )}
                 style={{ animationDelay: `${index * 50}ms` }}
                 >
                 <img 
@@ -212,12 +223,17 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
       </div>
 
       {/* Controls */}
-      <div className="w-full max-w-md flex flex-col bg-white/80 backdrop-blur-sm p-6 rounded-xl border border-stone-200 shadow-xl">
+      <div className={cn(
+        "w-full flex flex-col bg-white/80 backdrop-blur-sm rounded-xl border border-stone-200 shadow-xl origin-top",
+        isPortrait ? "max-w-full p-4 gap-4" : "max-w-md p-6 gap-6"
+      )}>
         
         {/* Select Photos Section */}
-        <div className="space-y-2 border-b border-stone-100 pb-4 mb-4">
-            <h3 className="font-serif text-lg text-[#745e59] text-center py-2">𝄞⨾𓍢ִ໋⋆𝓈𝑒𝓁𝑒𝒸𝓉 𝓅𝒽𝑜𝓉𝑜𝓈 🎞️ 𖥔 ݁ ˖</h3>
-            <div className="grid grid-cols-4 gap-2">
+        <div className="space-y-1 border-b border-stone-100 pb-2 mb-1">
+            <h3 className={cn("font-serif text-[#745e59] text-center py-2", isPortrait ? "text-base" : "text-lg")}>
+              𝄞⨾𓍢ִ໋⋆𝓈𝑒𝓁𝑒𝒸𝓉 𝓅𝒽𝑜𝓉𝑜𝓈 🎞️ 𖥔 ݁ ˖
+            </h3>
+            <div className="grid grid-cols-3 gap-3">
                 {photos.map((photo, index) => {
                     const isSelected = selectedPhotos.includes(photo);
                     const selectedIndex = selectedPhotos.indexOf(photo) + 1;
@@ -227,7 +243,8 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
                             key={index}
                             onClick={() => togglePhoto(photo)}
                             className={cn(
-                                "relative aspect-[4/3] rounded overflow-hidden transition-all duration-200 ring-offset-2",
+                                "relative rounded overflow-hidden transition-all duration-200 ring-offset-2",
+                                isPortrait ? "aspect-[3/4]" : "aspect-[4/3]",
                                 isSelected ? "ring-2 ring-[#745e59] opacity-100" : "opacity-40 hover:opacity-100 grayscale hover:grayscale-0"
                             )}
                         >
@@ -253,7 +270,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         <div className="space-y-4">
             {/* Filter Section */}
             <div className="border-b border-stone-100 pb-4">
-                <h3 className="font-serif text-lg text-[#745e59] text-center">𝒻𝒾𝓁𝓉𝑒𝓇 🪄⊹₊⟡⋆</h3>
+                <h3 className={cn("font-serif text-[#745e59] text-center", isPortrait ? "text-base" : "text-lg")}>𝒻𝒾𝓁𝓉𝑒𝓇 🪄⊹₊⟡⋆</h3>
                 <div className="flex flex-wrap gap-2 justify-center py-2">
                         {FILTERS.map((filter) => (
                         <Button
@@ -274,7 +291,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
 
             {/* Color Section */}
             <div className="border-b border-stone-100 pb-4">
-                <h3 className="font-serif text-lg text-[#745e59] text-center">𝒸𝑜𝓁𝑜𝓇 ✩ ₊˚˚🫧⊹♡</h3>
+                <h3 className={cn("font-serif text-[#745e59] text-center", isPortrait ? "text-base" : "text-lg")}>𝒸𝑜𝓁𝑜𝓇 ✩ ₊˚˚🫧⊹♡</h3>
                 <div className="flex flex-wrap gap-3 justify-center py-2">
                     {BACKGROUND_COLORS.map((color) => (
                         <button
@@ -293,7 +310,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
 
             {/* Note Section */}
             <div>
-                <h3 className="font-serif text-lg text-[#745e59] text-center">𝓃𝑜𝓉𝑒 ✎𓂃.☘︎ ݁˖</h3>
+                <h3 className={cn("font-serif text-[#745e59] text-center", isPortrait ? "text-base" : "text-lg")}>𝓃𝑜𝓉𝑒 ✎𓂃.☘︎ ݁˖</h3>
                 <div className="py-2 flex justify-center">
                     <input
                         type="text"
@@ -313,14 +330,14 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
                 <Button 
                     onClick={onRetake} 
                     variant="outline"
-                    className="btn-minimal flex-1 py-7 text-lg"
+                    className={cn("btn-minimal flex-1", isPortrait ? "py-5 text-base" : "py-7 text-lg")}
                     disabled={isGenerating}
                 >
                     ↩ 𝓇𝑒𝓉𝒶𝓀𝑒
                 </Button>
                 <Button 
                     onClick={handleSave} 
-                    className="btn-minimal flex-1 py-7 text-lg"
+                    className={cn("btn-minimal flex-1", isPortrait ? "py-5 text-base" : "py-7 text-lg")}
                     disabled={isGenerating}
                 >
                     {isGenerating ? "Processing..." : "‧₊˚ ☁️⋅ 𝓈𝒶𝓋𝑒 ♡"}

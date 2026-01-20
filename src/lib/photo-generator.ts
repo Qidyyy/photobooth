@@ -3,7 +3,7 @@ import { LAYOUT_CONFIG, getFormattedDate } from "./layout-config";
 export type LayoutType = 'grid' | 'strip';
 export type FilterType = 'none' | 'sepia' | 'bw' | 'vintage';
 
-export async function generateCompositeImage(photos: string[], filter: FilterType, backgroundColor: string = '#f5f5f4', layout: LayoutType = 'strip', note?: string): Promise<string> {
+export async function generateCompositeImage(photos: string[], filter: FilterType, backgroundColor: string = '#f5f5f4', layout: LayoutType = 'strip', note?: string, isPortrait: boolean = false): Promise<string> {
   if (photos.length === 0) throw new Error("No photos to generate image from");
 
   // Create a canvas
@@ -12,7 +12,8 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
   if (!ctx) throw new Error("Could not get canvas context");
 
   // Settings from Config
-  const { photoWidth, photoHeight, padding, bottomBannerHeight, logoHeight, gap, titleFontSize, dateFontSize } = LAYOUT_CONFIG;
+  const { padding, bottomBannerHeight, logoHeight, gap, titleFontSize, dateFontSize } = LAYOUT_CONFIG;
+  const { width: photoWidth, height: photoHeight } = LAYOUT_CONFIG.getDimensions(isPortrait);
   
   const cols = layout === 'grid' ? 2 : 1;
   const rows = Math.ceil(photos.length / cols);

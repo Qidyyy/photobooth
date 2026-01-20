@@ -3,6 +3,8 @@ import { type SessionStatus } from "@/hooks/usePhotoSession";
 import { Button } from "@/components/ui/button";
 import { CountdownOverlay } from "./CountdownOverlay";
 import { FlashEffect } from "./FlashEffect";
+import { useOrientation } from "@/hooks/useOrientation";
+import { cn } from "@/lib/utils";
 
 export interface CameraViewHandle {
   capture: () => Promise<string | null>;
@@ -22,6 +24,7 @@ interface CameraViewProps {
 
 export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
   ({ stream, error, isLoading, onClose, countdown = 0, isCapturing = false, onStartSession, photosTaken = 0, status }, ref) => {
+    const { isPortrait } = useOrientation();
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useImperativeHandle(ref, () => ({
@@ -35,14 +38,20 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
         }
 
         const canvas = document.createElement("canvas");
+        
+        // Capture at the video's native resolution, but respecting the aspect ratio crop if needed
+        // For simplicity, we just capture the video frame as is.
+        // However, we want to ensure the OUTPUT image matches our configured aspect ratio.
+        
+        // Let's grab the dimensions from our config based on orientation
+        // const targetDim = LAYOUT_CONFIG.getDimensions(isPortrait); 
+        // actually, we just want to leverage the video stream.
+        
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
         const ctx = canvas.getContext("2d");
         if (!ctx) return null;
-        
-        // Apply B&W filter - REMOVED for default normal mode
-        // ctx.filter = "grayscale(1) contrast(1.1)";
         
         // Flip horizontally to match mirrored video
         ctx.translate(canvas.width, 0);
@@ -90,15 +99,19 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
 
     return (
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 px-4">
-        <div className="relative w-full bg-[#745e59] rounded-lg overflow-hidden shadow-2xl aspect-video group">
+        {/* Dynamic Aspect Ratio Container */}
+        <div 
+            className={cn(
+                "relative w-full bg-[#745e59] rounded-lg overflow-hidden shadow-2xl group mx-auto transition-all duration-500",
+                isPortrait ? "aspect-[3/4] max-w-[500px]" : "aspect-video"
+            )}
+        >
           {(!stream || isLoading) && (
             <div className="absolute inset-0 flex items-center justify-center text-white/50 font-serif">
               {isLoading ? "Requesting camera access..." : "Waiting for camera..."}
             </div>
           )}
           
-
-
           <video
             ref={videoRef}
             autoPlay
