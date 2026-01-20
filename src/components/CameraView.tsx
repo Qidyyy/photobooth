@@ -17,6 +17,7 @@ interface CameraViewProps {
   isCapturing?: boolean;
   onStartSession?: () => void;
   photosTaken?: number;
+  status?: SessionStatus;
 }
 
 export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
@@ -109,9 +110,9 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
           <CountdownOverlay count={countdown} />
 
           {status === 'getting-ready' && (
-             <div className="absolute top-1/3 left-0 right-0 flex justify-center pointer-events-none z-30">
-                <div className="bg-black/40 backdrop-blur-md text-white px-6 py-3 rounded-full font-serif text-xl border border-white/20 animate-in fade-in zoom-in-95 duration-300">
-                    Get ready for {(photosTaken + 1) === 1 ? '1st' : (photosTaken + 1) === 2 ? '2nd' : (photosTaken + 1) === 3 ? '3rd' : `${photosTaken + 1}th`} photo...
+             <div className="absolute top-1/10 left-0 right-0 flex justify-center pointer-events-none z-30">
+                <div className="bg-black/10 backdrop-blur-md text-white px-6 py-3 rounded-full font-serif text-xl animate-in fade-in zoom-in-95 duration-300">
+                    𝕘𝕖𝕥 𝕣𝕖𝕒𝕕𝕪 𝕗𝕠𝕣 {(photosTaken + 1) === 1 ? '𝕗𝕚𝕣𝕤𝕥' : (photosTaken + 1) === 2 ? '𝕤𝕖𝕔𝕠𝕟𝕕' : (photosTaken + 1) === 3 ? '𝕥𝕙𝕚𝕣𝕕' : (photosTaken + 1) === 4 ? '𝕗𝕠𝕦𝕣𝕥𝕙' : (photosTaken + 1) === 5 ? '𝕗𝕚𝕗𝕥𝕙' : (photosTaken + 1) === 6 ? '𝕝𝕒𝕤𝕥' : `${photosTaken + 1}`} 𝕡𝕙𝕠𝕥𝕠...
                 </div>
              </div>
           )}
@@ -133,13 +134,13 @@ export const CameraView = forwardRef<CameraViewHandle, CameraViewProps>(
         </div>
 
         {/* External Controls - Take Photo Button */}
-        <div className="flex flex-col items-center gap-2 pb-4">
+        <div className="flex flex-col items-center gap-2 pb-4 py-7">
           {stream && !isLoading && status === 'idle' && (
             <>
               <Button
                 onClick={onStartSession}
                 size="lg"
-                className="btn-minimal font-serif text-lg px-8 py-6"
+                className="btn-minimal font-serif text-lg px-9 py-7"
               >
                 (｡ •̀  ᵕ 📷) ✨
               </Button>
