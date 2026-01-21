@@ -64,11 +64,11 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
   const [selectedPhotos] = useState<string[]>(photos.slice(0, defaultSelectionCount));
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const [view, setView] = useState<'review' | 'printing'>('review');
+
   const filterClass = FILTERS.find(f => f.id === activeFilter)?.class || 'filter-none';
 
-
-
-  const handleSave = async () => {
+  const downloadPhoto = async () => {
     setIsGenerating(true);
     try {
         const dataUrl = await generateCompositeImage(selectedPhotos, activeFilter, backgroundColor, layout, note, isPortrait);
@@ -79,116 +79,163 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        // Don't call onSave prop creates a reset (logout) effect. 
-        // We want to stay on this screen.
-        // onSave?.();
     } catch (e) {
         console.error("Failed to generate image", e);
         alert("Failed to save photo. Please try again.");
     } finally {
         setIsGenerating(false);
     }
+  }
+
+  const handleSave = async () => {
+    // Switch to printing view
+    setView('printing');
+    
+    // Wait for slide down animation (3s)
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Download
+    await downloadPhoto();
   };
 
-  return (
-    <div className="flex flex-col lg:flex-row items-center justify-center min-h-[100dvh] w-full max-w-7xl mx-auto p-4 md:p-8 gap-6 lg:gap-12">
-      
-      {/* Photo Preview */}
-      <div className="flex-shrink-0">
-        <div 
-          className={cn(
-              "flex flex-col p-6 rounded-lg shadow-2xl transition-all duration-500 mx-auto bg-stone-50 max-w-full",
-              layout === 'strip' ? 
-                  (isPortrait ? "w-full max-w-[320px]" : "w-full max-w-[350px]") : 
-                  (isPortrait ? "w-full max-w-[370px]" : "w-full max-w-[700px]")
-          )}
-          style={{ backgroundColor }}
-        >
-          <div className={cn(
-              "grid gap-4 mb-2",
-              layout === 'strip' ? "grid-cols-1" : "grid-cols-2"
-          )}>
-            {selectedPhotos.map((photo, index) => (
-                <div 
-                key={index} 
-                className={cn(
-                    "relative overflow-hidden rounded bg-stone-100 animate-in fade-in zoom-in-95 duration-300 fill-mode-backwards",
-                    isPortrait ? "aspect-[3/4]" : "aspect-[4/3]"
-                )}
-                style={{ animationDelay: `${index * 50}ms` }}
-                >
-                <img 
-                    src={photo} 
-                    alt={`Selected Photo ${index + 1}`} 
-                    className={cn("w-full h-full object-cover transition-all duration-300", filterClass)} 
-                />
-                </div>
-            ))}
-          </div>
+  const handleBackToSettings = () => {
+    setView('review');
+  }
 
-          {/* Footer Banner */}
-          <div 
-            className="flex flex-col items-center justify-center"
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] w-full max-w-7xl mx-auto p-4 md:p-8 overflow-hidden">
+      
+      {/* Content Container */}
+      <div className={cn(
+          "flex flex-col transition-all duration-500 w-full items-center justify-center",
+          view === 'review' ? "lg:flex-row gap-6 lg:gap-12" : "gap-8"
+      )}>
+
+      <div className={cn(
+          "flex-shrink-0 relative z-10 transition-all duration-500",
+          view === 'printing' ? "scale-[0.6] origin-top mb-10 md:mb-20" : "" // Can add scale effect if needed
+       )}>
+        <div className="relative">
+            {/* Cover masking the area above the slot */}
+            <div className={cn(
+                "absolute left-1/2 -translate-x-1/2 w-[150vw] h-[100vh] bg-background pointer-events-none",
+                "bottom-full z-20"
+            )} />
+
+            {/* Printer Slot */}
+            {/* Printer Slot Line - Invisible */}
+            {/* <div className="hidden" /> */}
+            
+            {/* The slot image is removed as requested "create a line" */}
+
+            <div 
+            className={cn(
+                "flex flex-col p-6 rounded-lg shadow-2xl mx-auto bg-stone-50 max-w-full relative z-10",
+                layout === 'strip' ? 
+                    (isPortrait ? "w-full max-w-[320px]" : "w-full max-w-[350px]") : 
+                    (isPortrait ? "w-full max-w-[370px]" : "w-full max-w-[700px]"),
+                
+                // Animation Logic
+                view === 'printing' 
+                    ? "animate-print-slide"
+                    : ""
+            )}
             style={{ 
-                height: LAYOUT_CONFIG.bottomBannerHeight * scale,
-                gap: LAYOUT_CONFIG.gap * scale
+                backgroundColor,
+                transition: view === 'printing' ? 'none' : 'transform 0.5s'
             }}
-          >
-             {note && note.trim().length > 0 ? (
-                 <h2 
-                    className="font-serif text-center font-bold"
-                    style={{ 
-                        fontSize: LAYOUT_CONFIG.titleFontSize * scale,
-                        color: (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') 
-                            ? LAYOUT_CONFIG.colors.textOnDark 
-                            : LAYOUT_CONFIG.colors.textOnLight
-                    }}
-                 >
-                     {note}
-                 </h2>
-             ) : (
-                 <div 
-                    className="transition-all duration-300"
-                    style={{
-                        height: LAYOUT_CONFIG.logoHeight * scale,
-                        width: (LAYOUT_CONFIG.logoHeight * scale) * 5, // Asptect ratio 5:1
-                        backgroundColor: (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') 
-                            ? '#e6dbc6' 
-                            : '#745e59',
-                        maskImage: 'url(/melphotobooth.svg)',
-                        WebkitMaskImage: 'url(/melphotobooth.svg)',
-                        maskRepeat: 'no-repeat',
-                        WebkitMaskRepeat: 'no-repeat',
-                        maskPosition: 'center',
-                        WebkitMaskPosition: 'center',
-                        maskSize: 'contain',
-                        WebkitMaskSize: 'contain'
-                    }}
-                 />
-             )}
-             
-             <p 
-                className={cn(
-                    "font-serif italic",
-                    (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') ? "text-stone-400" : "text-stone-500"
+            >
+            <div className={cn(
+                "grid gap-4 mb-2",
+                layout === 'strip' ? "grid-cols-1" : "grid-cols-2"
+            )}>
+                {selectedPhotos.map((photo, index) => (
+                    <div 
+                    key={index} 
+                    className={cn(
+                        "relative overflow-hidden rounded bg-stone-100",
+                        // Only animate fade in on initial review, not re-render during print
+                        view === 'review' ? "animate-in fade-in zoom-in-95 duration-300 fill-mode-backwards" : "",
+                        isPortrait ? "aspect-[3/4]" : "aspect-[4/3]"
+                    )}
+                    style={{ animationDelay: view === 'review' ? `${index * 50}ms` : '0ms' }}
+                    >
+                    <img 
+                        src={photo} 
+                        alt={`Selected Photo ${index + 1}`} 
+                        className={cn("w-full h-full object-cover transition-all duration-300", filterClass)} 
+                    />
+                    </div>
+                ))}
+            </div>
+
+            {/* Footer Banner */}
+            <div 
+                className="flex flex-col items-center justify-center"
+                style={{ 
+                    height: LAYOUT_CONFIG.bottomBannerHeight * scale,
+                    gap: LAYOUT_CONFIG.gap * scale
+                }}
+            >
+                {note && note.trim().length > 0 ? (
+                    <h2 
+                        className="font-serif text-center font-bold"
+                        style={{ 
+                            fontSize: LAYOUT_CONFIG.titleFontSize * scale,
+                            color: (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') 
+                                ? LAYOUT_CONFIG.colors.textOnDark 
+                                : LAYOUT_CONFIG.colors.textOnLight
+                        }}
+                    >
+                        {note}
+                    </h2>
+                ) : (
+                    <div 
+                        className="transition-all duration-300"
+                        style={{
+                            height: LAYOUT_CONFIG.logoHeight * scale,
+                            width: (LAYOUT_CONFIG.logoHeight * scale) * 5, // Asptect ratio 5:1
+                            backgroundColor: (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') 
+                                ? '#e6dbc6' 
+                                : '#745e59',
+                            maskImage: 'url(/melphotobooth.svg)',
+                            WebkitMaskImage: 'url(/melphotobooth.svg)',
+                            maskRepeat: 'no-repeat',
+                            WebkitMaskRepeat: 'no-repeat',
+                            maskPosition: 'center',
+                            WebkitMaskPosition: 'center',
+                            maskSize: 'contain',
+                            WebkitMaskSize: 'contain'
+                        }}
+                    />
                 )}
-                style={{ fontSize: LAYOUT_CONFIG.dateFontSize * scale }}
-             >
-                 {getFormattedDate()}
-             </p>
-          </div>
+                
+                <p 
+                    className={cn(
+                        "font-serif italic",
+                        (backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59') ? "text-stone-400" : "text-stone-500"
+                    )}
+                    style={{ fontSize: LAYOUT_CONFIG.dateFontSize * scale }}
+                >
+                    {getFormattedDate()}
+                </p>
+            </div>
+            </div>
+            
+            {/* Printer Slot Bottom - Visual Only (Masking the exit) */}
+             <div className={cn(
+                "absolute -bottom-4 left-0 right-0 h-8 bg-gradient-to-t from-white/0 to-white/0 z-20 pointer-events-none", 
+            )} />
         </div>
       </div>
 
-      {/* Controls */}
+      {/* Controls: SETTINGS PANEL (Only in Review Mode) */}
+      {view === 'review' && (
       <div className={cn(
-        "w-full flex flex-col bg-white/80 backdrop-blur-sm rounded-xl border border-stone-200 shadow-xl origin-top",
+        "w-full flex flex-col bg-white/80 backdrop-blur-sm rounded-xl border border-stone-200 shadow-xl origin-top relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-500",
         isPortrait ? "max-w-full p-4 gap-4" : "max-w-md p-6 gap-6"
       )}>
         
-
-
         <div className="space-y-4">
             {/* Filter Section */}
             <div className="border-b border-stone-100 pb-4">
@@ -265,6 +312,30 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
                 ✨ 𝓇𝑒𝓉𝒶𝓀𝑒 𝑜𝓇 𝓈𝓉𝒶𝓇𝓉 𝓃𝑒𝓌 𝓈𝑒𝓈𝓈𝒾𝑜𝓃 📸
             </Button>
         </div>
+      </div>
+      )}
+
+      {/* Controls: PRINTING / SUCCESS MODE (Only in Printing Mode) */}
+      {view === 'printing' && (
+          <div className="flex flex-col gap-4 items-center animate-in fade-in duration-1000 delay-[3000ms] mt-8">
+              <Button 
+                  onClick={handleBackToSettings}
+                  variant="outline"
+                  className="font-serif border-[#745e59] text-[#745e59] hover:bg-[#745e59]/10 px-8 py-6 text-lg rounded-full"
+              >
+                  ← 𝐵𝒶𝒸𝓀 𝓉𝑜 𝓈𝑒𝓉𝓉𝒾𝓃𝑔𝓈
+              </Button>
+
+              <Button 
+                  onClick={onRetake}
+                  variant="ghost"
+                  className="font-serif text-stone-500 hover:text-[#745e59]"
+              >
+                  ✨ 𝒮𝓉𝒶𝓇𝓉 𝓃𝑒𝓌 𝓈𝑒𝓈𝓈𝒾𝑜𝓃
+              </Button>
+          </div>
+      )}
+
       </div>
     </div>
   );
