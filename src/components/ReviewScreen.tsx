@@ -119,6 +119,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
         link.href = dataUrl;
         link.download = `photobooth-session-${Date.now()}.jpg`;
         document.body.appendChild(link);
+        link.click();
         document.body.removeChild(link);
         
         // Don't call onSave prop creates a reset (logout) effect. 
