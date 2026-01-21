@@ -44,8 +44,7 @@ export function usePhotoSession({ captureFn, onFinish }: UsePhotoSessionProps = 
         setStatus('capturing');
         playShutterSound();
         try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             if (!isSessionActiveRef.current) return;
             
             const photo = await captureFn();
