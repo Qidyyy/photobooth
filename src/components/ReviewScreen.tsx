@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { ArrowLeft, Home, SlidersHorizontal, X } from "lucide-react";
 import { LayoutType, generateCompositeImage } from "@/lib/photo-generator";
 import { LAYOUT_CONFIG, getFormattedDate } from "@/lib/layout-config";
 import { useResponsiveScale } from "@/hooks/useResponsiveScale";
@@ -39,8 +40,17 @@ const BACKGROUND_COLORS = [
 // === CONFIGURATION ===
 // Adjust this value (0.1 to 1.0) to change how big the camera/photo appears in Printing View
 const PRINTING_VIEW_WIDTH_PERCENTAGE = 0.8; 
-// Adjust this value to cap the maximum size (1.0 = actual pixel size, which is 700px wide)
-const PRINTING_VIEW_MAX_SCALE = 0.27; 
+// Adjust these values to cap the maximum size for each specific layout (1.0 = actual pixel size, ~700px wide)
+const PRINTING_VIEW_SCALES = {
+  strip: {
+    portrait: 0.27,
+    landscape: 0.27,
+  },
+  grid: {
+    portrait: 0.5,
+    landscape: 0.5,
+  }
+}; 
 
 
 
@@ -57,10 +67,15 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
   const [backgroundColor, setBackgroundColor] = useState<string>(BACKGROUND_COLORS[0].value);
   const [layout] = useState<LayoutType>(initialLayout);
   const [note, setNote] = useState<string>('');
+  const [showSettings, setShowSettings] = useState(false);
   
   // Dynamic scale for printing view (responsive to screen width)
   // Target width 700px covers the camera slot width
-  const printingScale = useResponsiveScale(700, PRINTING_VIEW_WIDTH_PERCENTAGE, PRINTING_VIEW_MAX_SCALE);
+  const currentMaxScale = layout === 'strip' 
+    ? (isPortrait ? PRINTING_VIEW_SCALES.strip.portrait : PRINTING_VIEW_SCALES.strip.landscape)
+    : (isPortrait ? PRINTING_VIEW_SCALES.grid.portrait : PRINTING_VIEW_SCALES.grid.landscape);
+
+  const printingScale = useResponsiveScale(700, PRINTING_VIEW_WIDTH_PERCENTAGE, currentMaxScale);
   
   // Calculate scale for preview synchronization
 
@@ -148,12 +163,13 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] w-full max-w-7xl mx-auto p-4 md:p-8 overflow-hidden">
+    <div className={cn(
+      "flex flex-col items-center justify-center min-h-[100dvh] w-full mx-auto overflow-hidden max-w-none p-0"
+    )}>
       
       {/* Content Container */}
       <div className={cn(
-          "flex flex-col transition-all duration-500 w-full items-center justify-center",
-          view === 'review' ? "lg:flex-row gap-6 lg:gap-12" : "flex-1 relative" // Use flex-1 to fill the parent min-h-[100dvh]
+          "flex flex-col transition-all duration-500 w-full items-center justify-center flex-1 relative" // Always center, panel is now overlay
       )}>
 
       <div className={cn(
@@ -298,110 +314,142 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
       </div>
 
       {/* Controls: SETTINGS PANEL (Only in Review Mode) */}
+      {/* Controls: SETTINGS PANEL BUTTON (Only in Review Mode) */}
       {view === 'review' && (
-      <div className={cn(
-        "w-full flex flex-col bg-white/80 backdrop-blur-sm rounded-xl border border-stone-200 shadow-xl origin-top relative z-30 animate-in fade-in slide-in-from-bottom-4 duration-500",
-        isPortrait ? "max-w-full p-4 gap-4" : "max-w-md p-6 gap-6"
-      )}>
-        
-        <div className="space-y-4">
-            {/* Filter Section */}
-            <div className="border-b border-stone-100 pb-4">
-                <h3 className={cn("font-serif text-[#745e59] text-center", isPortrait ? "text-base" : "text-lg")}>𝒻𝒾𝓁𝓉𝑒𝓇 🪄⊹₊⟡⋆</h3>
-                <div className="flex flex-wrap gap-2 justify-center py-2">
-                        {FILTERS.map((filter) => (
-                        <Button
-                        key={filter.id}
-                        variant={activeFilter === filter.id ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setActiveFilter(filter.id)}
-                        className={cn(
-                            "font-serif min-w-[3rem]",
-                            activeFilter === filter.id ? "bg-[#745e59]" : "text-stone-600 border-stone-200"
-                        )}
-                        >
-                        {filter.name}
-                        </Button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Color Section */}
-            <div className="border-b border-stone-100 pb-4">
-                <h3 className={cn("font-serif text-[#745e59] text-center", isPortrait ? "text-base" : "text-lg")}>𝒸𝑜𝓁𝑜𝓇 ✩ ₊˚˚🫧⊹♡</h3>
-                <div className="flex flex-wrap gap-3 justify-center py-2">
-                    {BACKGROUND_COLORS.map((color) => (
-                        <button
-                            key={color.id}
-                            onClick={() => setBackgroundColor(color.value)}
-                            className={cn(
-                                "w-8 h-8 rounded-full border-2 transition-all shadow-sm hover:scale-110",
-                                backgroundColor === color.value ? "border-[#745e59] scale-110 ring-2 ring-stone-100 ring-offset-2" : "border-stone-200 hover:border-stone-300"
-                            )}
-                            style={{ backgroundColor: color.value }}
-                            title={color.label}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Note Section */}
-            <div>
-                <h3 className={cn("font-serif text-[#745e59] text-center", isPortrait ? "text-base" : "text-lg")}>𝓃𝑜𝓉𝑒 ✎𓂃.☘︎ ݁˖</h3>
-                <div className="py-2 flex justify-center">
-                    <input
-                        type="text"
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        placeholder="𝓉𝓎𝓅𝑒 𝒽𝑒𝓇𝑒..."
-                        maxLength={20}
-                        className="w-3/4 text-center bg-transparent border border-stone-200 rounded-md focus:border-[#745e59] focus:ring-1 focus:ring-[#745e59] outline-none px-4 py-2 font-serif text-[#745e59] placeholder:text-stone-300 transition-all"
-                    />
-                </div>
-            </div>
-        </div>
-
-
-        <div className="mt-4 pt-4 border-t border-stone-100 flex flex-col gap-3">
-                <Button 
-                    onClick={handleSave} 
-                    className={cn("btn-minimal w-full", isPortrait ? "py-5 text-base" : "py-7 text-lg")}
-                    disabled={isGenerating}
-                >
-                    {isGenerating ? "Processing..." : "‧₊˚ ☁️⋅ 𝓈𝒶𝓋𝑒 ♡"}
-                </Button>
-            
+        <>
+            {/* Home / New Session Button (Top Left) */}
             <Button 
                 onClick={onRetake}
-                variant="ghost"
-                className="w-full font-serif text-[#745e59] hover:bg-[#745e59]/10"
-                disabled={isGenerating}
+                variant="outline"
+                className="fixed top-6 left-6 z-50 w-12 h-12 rounded-full border-[#745e59] text-[#745e59] bg-white/80 backdrop-blur-sm shadow-lg p-0 hover:scale-105 transition-all"
             >
-                ✨ 𝓇𝑒𝓉𝒶𝓀𝑒 𝑜𝓇 𝓈𝓉𝒶𝓇𝓉 𝓃𝑒𝓌 𝓈𝑒𝓈𝓈𝒾𝑜𝓃 📸
+                <ArrowLeft className="w-6 h-6" />
             </Button>
-        </div>
-      </div>
+            {/* Toggle Button */}
+            <div 
+                className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
+                onMouseEnter={() => setShowSettings(true)}
+                onMouseLeave={() => setShowSettings(false)}
+            >
+                <div className={cn(
+                    "transition-all duration-300 origin-bottom-right",
+                    showSettings ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4 pointer-events-none"
+                )}>
+                    <div className={cn(
+                        "w-full max-w-sm flex flex-col bg-white/90 backdrop-blur-md rounded-2xl border border-stone-200 shadow-2xl p-6 gap-6",
+                    )}>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                             <h3 className="font-serif text-[#745e59] text-lg">𝒞𝓊𝓈𝓉𝑜𝓂𝒾𝓏𝑒</h3>
+                             {/* Mobile Close Button */}
+                             <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden" onClick={() => setShowSettings(false)}>
+                                <X className="h-4 w-4" />
+                             </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Filter Section */}
+                            <div>
+                                <h3 className="font-serif text-[#745e59] text-sm mb-2">𝒻𝒾𝓁𝓉𝑒𝓇</h3>
+                                <div className="flex flex-wrap gap-2">
+                                        {FILTERS.map((filter) => (
+                                        <Button
+                                        key={filter.id}
+                                        variant={activeFilter === filter.id ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setActiveFilter(filter.id)}
+                                        className={cn(
+                                            "font-serif text-xs px-2 h-7",
+                                            activeFilter === filter.id ? "bg-[#745e59]" : "text-stone-600 border-stone-200"
+                                        )}
+                                        >
+                                        {filter.name}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                
+                            {/* Color Section */}
+                            <div>
+                                <h3 className="font-serif text-[#745e59] text-sm mb-2">𝒸𝑜𝓁𝑜𝓇</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {BACKGROUND_COLORS.map((color) => (
+                                        <button
+                                            key={color.id}
+                                            onClick={() => setBackgroundColor(color.value)}
+                                            className={cn(
+                                                "w-6 h-6 rounded-full border-2 transition-all shadow-sm hover:scale-110",
+                                                backgroundColor === color.value ? "border-[#745e59] scale-110 ring-2 ring-stone-100 ring-offset-2" : "border-stone-200 hover:border-stone-300"
+                                            )}
+                                            style={{ backgroundColor: color.value }}
+                                            title={color.label}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                
+                            {/* Note Section */}
+                            <div>
+                                <h3 className="font-serif text-[#745e59] text-sm mb-2">𝓃𝑜𝓉𝑒</h3>
+                                <div className="flex justify-center">
+                                    <input
+                                        type="text"
+                                        value={note}
+                                        onChange={(e) => setNote(e.target.value)}
+                                        placeholder="𝓉𝓎𝓅𝑒 𝒽𝑒𝓇𝑒..."
+                                        maxLength={20}
+                                        className="w-full text-center bg-transparent border border-stone-200 rounded-md focus:border-[#745e59] focus:ring-1 focus:ring-[#745e59] outline-none px-3 py-1.5 font-serif text-[#745e59] placeholder:text-stone-300 transition-all text-sm"
+                                    />
+                                </div>
+                            </div>
+
+                             {/* Actions */}
+                             <div className="pt-2 flex flex-col gap-2">
+                                <Button 
+                                    onClick={handleSave} 
+                                    className="btn-minimal w-full py-4 text-base"
+                                    disabled={isGenerating}
+                                >
+                                    {isGenerating ? "Processing..." : "‧₊˚ ☁️⋅ 𝓈𝒶𝓋𝑒 ♡"}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <Button 
+                    onClick={() => setShowSettings(!showSettings)}
+                    className={cn(
+                        "w-14 h-14 rounded-full shadow-xl transition-all duration-300 z-50",
+                        showSettings ? "bg-[#745e59] text-white rotate-90" : "bg-white text-[#745e59] hover:bg-[#745e59]/10"
+                    )}
+                >
+                    {showSettings ? <X className="w-6 h-6" /> : <SlidersHorizontal className="w-6 h-6" />}
+                </Button>
+            </div>
+        </>
       )}
 
       {/* Controls: PRINTING / SUCCESS MODE (Only in Printing Mode) */}
       {view === 'printing' && (
-          <div className="absolute bottom-10 left-0 right-0 flex flex-col gap-4 items-center animate-in fade-in duration-1000 delay-[3000ms]">
-              <Button 
-                  onClick={handleBackToSettings}
-                  variant="outline"
-                  className="font-serif border-[#745e59] text-[#745e59] hover:bg-[#745e59]/10 px-8 py-6 text-lg rounded-full shadow-lg bg-white/80"
-              >
-                  ← 𝐵𝒶𝒸𝓀 𝓉𝑜 𝓈𝑒𝓉𝓉𝒾𝓃𝑔𝓈
-              </Button>
+          <>
+            {/* Back Button (Top Left) */}
+            <Button 
+                onClick={handleBackToSettings}
+                variant="outline"
+                className="fixed top-6 left-6 z-50 w-12 h-12 rounded-full border-[#745e59] text-[#745e59] bg-white/80 backdrop-blur-sm shadow-lg p-0 animate-in fade-in duration-1000 delay-[3000ms] hover:scale-105 transition-all"
+            >
+                <ArrowLeft className="w-6 h-6" />
+            </Button>
 
-              <Button 
-                  onClick={onRetake}
-                  variant="ghost"
-                  className="font-serif text-stone-500 hover:text-[#745e59]"
-              >
-                  ✨ 𝒮𝓉𝒶𝓇𝓉 𝓃𝑒𝓌 𝓈𝑒𝓈𝓈𝒾𝑜𝓃
-              </Button>
-          </div>
+            {/* Start New Session Button (Bottom Right) */}
+            <Button 
+                onClick={onRetake}
+                variant="outline"
+                className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full border-[#745e59] text-[#745e59] bg-white/80 backdrop-blur-sm shadow-lg p-0 animate-in fade-in duration-1000 delay-[3000ms] hover:scale-105 transition-all"
+            >
+                <Home className="w-6 h-6" />
+            </Button>
+          </>
       )}
 
       </div>
