@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft, Home, SlidersHorizontal, X, Printer } from "lucide-react";
 import { LayoutType, generateCompositeImage } from "@/lib/photo-generator";
 import { LAYOUT_CONFIG, getFormattedDate } from "@/lib/layout-config";
-import { useResponsiveScale } from "@/hooks/useResponsiveScale";
+
+import { useResponsiveContain } from "@/hooks/useResponsiveContain";
 
 
 interface ReviewScreenProps {
@@ -37,22 +38,6 @@ const BACKGROUND_COLORS = [
   { id: 'purple', value: '#f3e8ff', label: 'Purple' },
 ];
 
-// === CONFIGURATION ===
-// Adjust this value (0.1 to 1.0) to change how big the camera/photo appears in Printing View
-const PRINTING_VIEW_WIDTH_PERCENTAGE = 0.8; 
-// Adjust these values to cap the maximum size for each specific layout (1.0 = actual pixel size, ~700px wide)
-const PRINTING_VIEW_SCALES = {
-  strip: {
-    portrait: 0.27,
-    landscape: 0.27,
-  },
-  grid: {
-    portrait: 0.5,
-    landscape: 0.5,
-  }
-}; 
-
-
 
 export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: ReviewScreenProps) {
   const [isPortrait, setIsPortrait] = useState(false);
@@ -62,61 +47,92 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
       setIsPortrait(window.matchMedia("(orientation: portrait)").matches);
     }
   }, []);
-  const [view, setView] = useState<'review' | 'printing'>('review'); // Moved up for access in config
+  const [view, setView] = useState<'review' | 'printing'>('review');
   const [activeFilter, setActiveFilter] = useState<FilterType>('none');
   const [backgroundColor, setBackgroundColor] = useState<string>(BACKGROUND_COLORS[0].value);
   const [layout] = useState<LayoutType>(initialLayout);
   const [note, setNote] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
-  
-  // Dynamic scale for printing view (responsive to screen width)
-  // Target width 700px covers the camera slot width
-  const currentMaxScale = layout === 'strip' 
-    ? (isPortrait ? PRINTING_VIEW_SCALES.strip.portrait : PRINTING_VIEW_SCALES.strip.landscape)
-    : (isPortrait ? PRINTING_VIEW_SCALES.grid.portrait : PRINTING_VIEW_SCALES.grid.landscape);
 
-  const printingScale = useResponsiveScale(700, PRINTING_VIEW_WIDTH_PERCENTAGE, currentMaxScale);
+  // === DYNAMIC SCALING ===
   
-  // Calculate scale for preview synchronization
-
-  const { padding } = LAYOUT_CONFIG;
-  const { width: photoWidth, height: photoHeight } = LAYOUT_CONFIG.getDimensions(isPortrait);
-  
-  const STRIP_CANVAS_WIDTH = photoWidth + (padding * 2);
-  const GRID_CANVAS_WIDTH = (photoWidth * 2) + (padding * 3);
-  
-  // === ADJUST SIZES HERE for Photo Ratio & Camera Fit ===
-  const PREVIEW_SIZES = {
-    printing: {
-      strip: { 
-        portrait: { photo: 300, camera: 700 }, 
-        landscape: { photo: 300, camera: 700 } 
-      },
-      grid: { 
-        portrait: { photo: 330, camera: 700 }, 
-        landscape: { photo: 330, camera: 700 } 
-      },
-    },
-    review: {
-      strip: { 
-        portrait: { photo: 150, camera: 0 }, 
-        landscape: { photo: 350, camera: 0 } 
-      },
-      grid: { 
-        portrait: { photo: 370, camera: 0 }, 
-        landscape: { photo: 700, camera: 0 } 
-      },
-    }
+  // Calculate Base Dimensions (Unscaled high-res pixels)
+  // This mimics the structure of the generated image to preserve ratios
+  const getBaseDimensions = () => {
+    const { width: pW, height: pH } = LAYOUT_CONFIG.getDimensions(isPortrait);
+    const { padding, bottomBannerHeight } = LAYOUT_CONFIG;
+    
+    // Widths
+    const stripWidth = pW + (padding * 2);
+    const gridWidth = (pW * 2) + (padding * 3);
+    
+    const baseWidth = layout === 'strip' ? stripWidth : gridWidth;
+    
+    // Heights
+    const cols = layout === 'strip' ? 1 : 2;
+    const numPhotos = 4; // Default selection count
+    const rows = Math.ceil(numPhotos / cols);
+    
+    // Height Calculation: 
+    // Top Padding + (Rows * PhotoHeight) + (Gaps) + Banner + Bottom Padding?
+    // In Generator: padding (top) + photos + gap + banner...
+    // In CSS: Padding is applied to the container.
+    // Total Height = (padding * 2) + (rows * pH) + ((rows - 1) * padding) + bottomBannerHeight
+    const baseHeight = (padding * 2) + (rows * pH) + ((rows - 1) * padding) + bottomBannerHeight;
+    
+    return { width: baseWidth, height: baseHeight };
   };
 
-  const currentModeSizes = view === 'printing' ? PREVIEW_SIZES.printing : PREVIEW_SIZES.review;
-  const currentLayoutSizes = layout === 'strip' ? currentModeSizes.strip : currentModeSizes.grid;
-  const currentOrientationSizes = isPortrait ? currentLayoutSizes.portrait : currentLayoutSizes.landscape;
-  
-  const targetWidth = currentOrientationSizes.photo;
-  const targetCameraWidth = currentOrientationSizes.camera;
+  const baseDimensions = getBaseDimensions();
+  const { padding } = LAYOUT_CONFIG;
 
-  const CANVAS_WIDTH = layout === 'strip' ? STRIP_CANVAS_WIDTH : GRID_CANVAS_WIDTH;
+  // 1. Review Mode Scaling: Constraint the Photo Strip/Grid to the viewport
+  // We leave 15% padding (0.15) for UI controls (banners, buttons)
+  const reviewScale = useResponsiveContain(baseDimensions.width, baseDimensions.height, 0.15);
+
+  // 2. Printing Mode Scaling: Constraint the Camera Slot + Photo to the viewport
+  // We need to fit:
+  // - The Camera Slot Width (700px)
+  // - The Total Height of the animation scene:
+  //   The photo slides down to Y=492px. 
+  //   The ending bottom position is 492px + PhotoHeight * (PrintingScale vs BaseScale)
+  //   We approximate the bounding box by calculating the Photo Height in "Printing Units" (where width=300)
+  
+  const PRINTING_BASE_PHOTO_WIDTH_CONST = 300; 
+  // Calculate the aspect ratio of the photo strip/grid
+  const baseAspectRatio = baseDimensions.width / baseDimensions.height;
+  // Calculate the height of the photo when its width is 300px
+  const printingPhotoHeight = PRINTING_BASE_PHOTO_WIDTH_CONST / baseAspectRatio;
+  
+  // Total scene height = Top Offset + Photo Height + Bottom Margin
+  const PRINTING_SCENE_HEIGHT = 492 + printingPhotoHeight + 50; 
+  const PRINTING_SCENE_WIDTH = 700; // Camera width
+
+  const printingScale = useResponsiveContain(PRINTING_SCENE_WIDTH, PRINTING_SCENE_HEIGHT, 0.1); 
+
+  // Determine active target width based on View
+  // For Review: scale * baseWidth
+  // For Printing: Fixed Base (700 for camera, 300 for photo relative base) -> applied via transform
+  
+  // REVIEW MODE: We scale the internal properties (targetWidth)
+  // PRINTING MODE: We scale the external container (transform), internal props stay fixed at "Print Base"
+  
+  const PRINTING_BASE_PHOTO_WIDTH = 300; 
+  const PRINTING_BASE_CAMERA_WIDTH = 700;
+
+  const targetWidth = view === 'printing' 
+    ? PRINTING_BASE_PHOTO_WIDTH 
+    : baseDimensions.width * reviewScale;
+
+  const targetCameraWidth = view === 'printing' 
+    ? PRINTING_BASE_CAMERA_WIDTH 
+    : 0; // Not used in review
+
+  const CANVAS_WIDTH = baseDimensions.width;
+  
+  // Internal Scale Factor (drives padding, border-radius, font-size)
+  // In Review Mode: scale varies with screen size.
+  // In Printing Mode: scale is relative to the PRINTING_BASE_PHOTO_WIDTH vs CANVAS_WIDTH.
   const scale = targetWidth / CANVAS_WIDTH;
   
   // Default selection based on layout
@@ -193,8 +209,8 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
           /* Responsive Group Wrapper: Camera + Photo */
           
           view === 'printing' 
-            ? "absolute top-10 left-1/2 origin-top" // Removed hardcoded scales, relying on dynamic scale below. Removed -translate-x-1/2 here to coordinate with transform style.
-            : "scale-[0.95] sm:scale-[0.85] md:scale-100 origin-center" // Keep Review Screen logic as is
+            ? "absolute top-10 left-1/2 origin-top" 
+            : "origin-center"
        )}
        style={view === 'printing' ? { transform: `translateX(-50%) scale(${printingScale})` } : {}}
        >
