@@ -203,7 +203,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
                 - This moves the photo DOWN only during printing animation.
                 - Settings screen stays at 0px.
             */}
-            <div className="relative z-40 overflow-hidden px-6 pb-6 pt-0" style={{ transform: view === 'printing' ? 'translateY(495px) translateX(5px)' : 'translateY(0px)' }}>
+            <div className="relative z-40 overflow-hidden px-6 pb-6 pt-0" style={{ transform: view === 'printing' ? 'translateY(492px) translateX(5px)' : 'translateY(0px)' }}>
             <div 
             className={cn(
                 "flex flex-col shadow-sm mx-auto bg-stone-50 relative",
