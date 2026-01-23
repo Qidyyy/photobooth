@@ -1,9 +1,9 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Home, SlidersHorizontal, X } from "lucide-react";
+import { ArrowLeft, Home, SlidersHorizontal, X, Printer } from "lucide-react";
 import { LayoutType, generateCompositeImage } from "@/lib/photo-generator";
 import { LAYOUT_CONFIG, getFormattedDate } from "@/lib/layout-config";
 import { useResponsiveScale } from "@/hooks/useResponsiveScale";
@@ -161,6 +161,22 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
   const handleBackToSettings = () => {
     setView('review');
   }
+
+  const settingsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSettingsEnter = () => {
+    if (settingsTimeoutRef.current) {
+        clearTimeout(settingsTimeoutRef.current);
+        settingsTimeoutRef.current = null;
+    }
+    setShowSettings(true);
+  };
+
+  const handleSettingsLeave = () => {
+    settingsTimeoutRef.current = setTimeout(() => {
+        setShowSettings(false);
+    }, 500);
+  };
 
   return (
     <div className={cn(
@@ -327,13 +343,15 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
             {/* Toggle Button */}
             <div 
                 className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
-                onMouseEnter={() => setShowSettings(true)}
-                onMouseLeave={() => setShowSettings(false)}
             >
-                <div className={cn(
-                    "transition-all duration-300 origin-bottom-right",
-                    showSettings ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4 pointer-events-none"
-                )}>
+                <div 
+                    className={cn(
+                        "transition-all duration-300 origin-bottom-right",
+                        showSettings ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4 pointer-events-none"
+                    )}
+                    onMouseEnter={handleSettingsEnter}
+                    onMouseLeave={handleSettingsLeave}
+                >
                     <div className={cn(
                         "w-full max-w-sm flex flex-col bg-white/90 backdrop-blur-md rounded-2xl border border-stone-200 shadow-2xl p-6 gap-2",
                     )}>
@@ -412,12 +430,25 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
 
                 <Button 
                     onClick={() => setShowSettings(!showSettings)}
+                    onMouseEnter={handleSettingsEnter}
+                    onMouseLeave={handleSettingsLeave}
                     className={cn(
                         "btn-minimal w-14 h-14 transition-all duration-300 z-50 flex items-center justify-center p-0",
                         showSettings ? "btn-minimal-active rotate-90" : ""
                     )}
                 >
                     {showSettings ? <X className="w-6 h-6" /> : <SlidersHorizontal className="w-6 h-6" />}
+                </Button>
+
+                <Button 
+                    onClick={handleSave} 
+                    className={cn(
+                        "btn-minimal w-14 h-14 z-50 flex items-center justify-center p-0 transition-all duration-300",
+                    )}
+                    disabled={isGenerating}
+                    title="Print & Save"
+                >
+                    <Printer className="w-6 h-6" />
                 </Button>
             </div>
         </>
