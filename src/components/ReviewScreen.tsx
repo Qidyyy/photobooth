@@ -369,6 +369,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
             {/* Home / New Session Button (Top Left) */}
             <Button 
                 onClick={onRetake}
+                aria-label="Retake"
                 className="btn-minimal fixed top-6 left-6 z-50 w-14 h-14 flex items-center justify-center p-0"
                 style={{ transform: `scale(${uiScale})`, transformOrigin: 'top left' }}
             >

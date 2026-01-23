@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { useState, ChangeEvent } from "react";
 
 interface UploadScreenProps {
@@ -54,18 +55,25 @@ export function UploadScreen({ onUploadComplete, onCancel }: UploadScreenProps) 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-8 text-center p-8 max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-700">
-      <div className="space-y-4">
-        <h2 className="text-5xl font-serif text-stone-900">Upload Photos</h2>
-        <p className="text-xl text-stone-600 font-serif italic max-w-lg mx-auto">
-          Select exactly 4 photos from your device to create a vintage photostrip.
-        </p>
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] space-y-[4vh] text-center p-6 max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-700 relative overflow-hidden">
+      
+      {/* Floating Back Button */}
+      <Button 
+          onClick={onCancel}
+          aria-label="Back"
+          className="btn-minimal fixed top-[clamp(1rem,3vh,1.5rem)] left-[clamp(1rem,3vw,1.5rem)] z-50 w-12 h-12 md:w-14 md:h-14 flex items-center justify-center p-0"
+      >
+          <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
+      </Button>
+
+      <div className="space-y-[2vh] w-full max-w-[90vw]">
+        <h2 className="text-[clamp(1.5rem,5vw,2.5rem)] font-serif text-stone-900 leading-tight">⤷ ゛𝓊𝓅𝓁𝑜𝒶𝒹 𝓅𝒽𝑜𝓉𝑜𝓈 ˎˊ˗</h2>
       </div>
 
-      <div className="flex flex-col items-center space-y-6">
-        <label htmlFor="photo-upload" className="cursor-pointer">
-            <div className="flex items-center justify-center w-64 h-32 border-2 border-dashed border-stone-400 rounded-lg bg-stone-50 hover:bg-stone-100 transition-colors">
-                <span className="text-stone-600 font-serif text-lg">Click to Select Photos</span>
+      <div className="flex flex-col items-center space-y-[3vh] w-full">
+        <label htmlFor="photo-upload" className="cursor-pointer group flex flex-col items-center gap-4 transition-transform hover:scale-[1.02] active:scale-[0.98]">
+            <div className="flex items-center justify-center w-[70vw] max-w-sm aspect-[2/1] border-2 border-dashed border-stone-400 rounded-lg bg-stone-50 group-hover:bg-stone-100 transition-colors relative overflow-hidden shadow-sm">
+                <span className="text-stone-600 font-serif text-[clamp(0.9rem,3vw,1.125rem)] z-10 p-2">🖱️: ̗̀➛ 𝕔𝕝𝕚𝕔𝕜 𝕥𝕠 𝕤𝕖𝕝𝕖𝕔𝕥</span>
             </div>
             <input 
                 id="photo-upload" 
@@ -77,16 +85,13 @@ export function UploadScreen({ onUploadComplete, onCancel }: UploadScreenProps) 
             />
         </label>
 
-        {error && (
-            <p className="text-red-500 font-serif animate-in fade-in">{error}</p>
-        )}
+        <p className="text-[clamp(0.8rem,2.5vw,1rem)] text-stone-400 font-serif italic max-w-[80vw] mx-auto leading-relaxed">
+          *Select 4 photos from your device to create a photostrip/grid.
+        </p>
 
-        <Button 
-            onClick={onCancel}
-            className="btn-minimal font-serif min-w-[160px] mt-8 py-6 text-lg"
-        >
-            Cancel
-        </Button>
+        {error && (
+            <p className="text-red-500 font-serif text-sm animate-in fade-in bg-red-50 px-4 py-2 rounded-md border border-red-100">{error}</p>
+        )}
       </div>
     </div>
   );
