@@ -203,10 +203,10 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
                 - This moves the photo DOWN only during printing animation.
                 - Settings screen stays at 0px.
             */}
-            <div className="relative z-40 overflow-hidden" style={{ transform: view === 'printing' ? 'translateY(495px) translateX(5px)' : 'translateY(0px)' }}>
+            <div className="relative z-40 overflow-hidden px-6 pb-6 pt-0" style={{ transform: view === 'printing' ? 'translateY(495px) translateX(5px)' : 'translateY(0px)' }}>
             <div 
             className={cn(
-                "flex flex-col shadow-2xl mx-auto bg-stone-50 relative",
+                "flex flex-col shadow-sm mx-auto bg-stone-50 relative",
                 // Animation Logic
                 view === 'printing' 
                     ? "animate-print-slide"
@@ -400,7 +400,7 @@ export function ReviewScreen({ photos, onRetake, onSave, initialLayout }: Review
                              <div className="pt-2 flex flex-col gap-2">
                                 <Button 
                                     onClick={handleSave} 
-                                    className="btn-minimal w-full py-5 text-base font-medium tracking-wide"
+                                    className="btn-minimal w-[80%] mx-auto py-5 text-base font-medium tracking-wide origin-center"
                                     disabled={isGenerating}
                                 >
                                     {isGenerating ? "Processing..." : "˚ ☁️⋅ 𝓅𝓇𝒾𝓃𝓉 & 𝓈𝒶𝓋𝑒 ♡‧₊"}

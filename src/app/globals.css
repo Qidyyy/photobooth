@@ -152,7 +152,7 @@
     border-radius: 9999px; /* full rounded */
     color: #745e59; /* primary/vintage brown */
     border: 2.5px solid #e6dbc6;
-    box-shadow: none;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1); /* centered shadow */
     transition: all 0.2s ease-in-out;
   }
 
