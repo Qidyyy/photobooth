@@ -72,6 +72,15 @@ export default function Home() {
     setView('layout');
   };
 
+  const handleLayoutBack = () => {
+    if (isUploadSource) {
+      setView('upload');
+    } else {
+      resetSession();
+      handleUseCamera();
+    }
+  };
+
   const handleLayoutSelect = (layout: LayoutType, isPortrait: boolean) => {
     setSelectedLayout(layout);
     setIsPortraitSelection(isPortrait);
@@ -113,7 +122,10 @@ export default function Home() {
       )}
 
       {view === 'layout' && (
-        <LayoutSelectionScreen onSelectLayout={handleLayoutSelect} />
+        <LayoutSelectionScreen 
+          onSelectLayout={handleLayoutSelect} 
+          onBack={handleLayoutBack}
+        />
       )}
 
       {view === 'review' && (
