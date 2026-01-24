@@ -1,0 +1,49 @@
+
+> mvp-photobooth@0.1.0 test
+> vitest src/components/__tests__/ReviewScreen.test.tsx
+
+
+[1m[44m DEV [49m[22m [34mv4.0.17 [39m[90m/Users/meowiu/photobooth[39m
+
+ [31m❯[39m src/components/__tests__/ReviewScreen.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 126[2mms[22m[39m
+[31m     [31m×[31m renders all photos[39m[32m 84[2mms[22m[39m
+[31m     [31m×[31m applies default filter (none)[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m changes filter when button is clicked[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m calls onRetake when retake button is clicked[39m[32m 16[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/components/__tests__/ReviewScreen.test.tsx[2m > [22mReviewScreen[2m > [22mrenders all photos
+[41m[1m FAIL [22m[49m src/components/__tests__/ReviewScreen.test.tsx[2m > [22mReviewScreen[2m > [22mapplies default filter (none)
+[41m[1m FAIL [22m[49m src/components/__tests__/ReviewScreen.test.tsx[2m > [22mReviewScreen[2m > [22mchanges filter when button is clicked
+[41m[1m FAIL [22m[49m src/components/__tests__/ReviewScreen.test.tsx[2m > [22mReviewScreen[2m > [22mcalls onRetake when retake button is clicked
+[31m[1mTypeError[22m: window.matchMedia is not a function[39m
+[36m [2m❯[22m src/components/ReviewScreen.tsx:[2m46:28[22m[39m
+    [90m 44| [39m
+    [90m 45| [39m  [34museEffect[39m(() [33m=>[39m {
+    [90m 46| [39m      setIsPortrait(window.matchMedia("(orientation: portrait)").match…
+    [90m   | [39m                           [31m^[39m
+    [90m 47| [39m  }[33m,[39m [])[33m;[39m
+    [90m 48| [39m  
+[90m [2m❯[22m Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:[2m25989:20[22m[39m
+[90m [2m❯[22m runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:[2m874:13[22m[39m
+[90m [2m❯[22m commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:[2m13249:29[22m[39m
+[90m [2m❯[22m commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:[2m13336:11[22m[39m
+[90m [2m❯[22m commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:[2m15484:13[22m[39m
+[90m [2m❯[22m recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:[2m15439:11[22m[39m
+[90m [2m❯[22m commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:[2m15519:11[22m[39m
+[90m [2m❯[22m flushPassiveEffects node_modules/react-dom/cjs/react-dom-client.development.js:[2m18432:9[22m[39m
+[90m [2m❯[22m node_modules/react-dom/cjs/react-dom-client.development.js:[2m17923:15[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[90m (4)[39m
+[2m   Start at [22m 23:19:54
+[2m   Duration [22m 1.87s[2m (transform 224ms, setup 120ms, import 640ms, tests 126ms, environment 793ms)[22m
+
+[1m[41m FAIL [49m[22m [31mTests failed. Watching for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+[31mCancelling test run. Press CTRL+c again to exit forcefully.
+[39m
