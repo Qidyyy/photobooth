@@ -3,6 +3,77 @@ import { LAYOUT_CONFIG, getFormattedDate } from "./layout-config";
 export type LayoutType = 'grid' | 'strip';
 export type FilterType = 'none' | 'sepia' | 'bw' | 'vintage';
 
+// Helper to apply pixel-level filters
+function applyManualFilter(imageData: ImageData, type: FilterType) {
+    const data = imageData.data;
+    const len = data.length;
+
+    for (let i = 0; i < len; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        if (type === 'bw') {
+            // Standard Grayscale: 0.299R + 0.587G + 0.114B
+            // Contrast 1.1: (val - 128) * 1.1 + 128
+            let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+            // Apply contrast
+            gray = ((gray - 128) * 1.1) + 128;
+            
+            data[i] = gray;
+            data[i + 1] = gray;
+            data[i + 2] = gray;
+        } 
+        else if (type === 'sepia') {
+            // Standard Sepia Matrix
+            // NewR = 0.393R + 0.769G + 0.189B
+            // NewG = 0.349R + 0.686G + 0.168B
+            // NewB = 0.272R + 0.534G + 0.131B
+            
+            let nr = (0.393 * r) + (0.769 * g) + (0.189 * b);
+            let ng = (0.349 * r) + (0.686 * g) + (0.168 * b);
+            let nb = (0.272 * r) + (0.534 * g) + (0.131 * b);
+
+            // Contrast 1.2
+            nr = ((nr - 128) * 1.2) + 128;
+            ng = ((ng - 128) * 1.2) + 128;
+            nb = ((nb - 128) * 1.2) + 128;
+
+            data[i] = nr;
+            data[i + 1] = ng;
+            data[i + 2] = nb;
+        }
+        else if (type === 'vintage') {
+            // Custom Vintage: Sepia blend + Saturation + Contrast
+             // 1. Slight Sepia (less intense)
+            let nr = (0.393 * r) + (0.769 * g) + (0.189 * b);
+            let ng = (0.349 * r) + (0.686 * g) + (0.168 * b);
+            let nb = (0.272 * r) + (0.534 * g) + (0.131 * b);
+            
+            // Blend original (60%) with sepia (40%)
+            nr = (r * 0.6) + (nr * 0.4);
+            ng = (g * 0.6) + (ng * 0.4);
+            nb = (b * 0.6) + (nb * 0.4);
+
+            // 2. Increase Saturation (approximate) - actually vintage usually means LESS saturation or warm tint.
+            // Let's just bump brightness and contrast slightly as per original filter
+            // contrast(0.9) brightness(1.1)
+            
+            nr = ((nr - 128) * 0.9) + 128;
+            ng = ((ng - 128) * 0.9) + 128;
+            nb = ((nb - 128) * 0.9) + 128;
+            
+            nr = nr * 1.1;
+            ng = ng * 1.1;
+            nb = nb * 1.1;
+
+            data[i] = nr;
+            data[i + 1] = ng;
+            data[i + 2] = nb;
+        }
+    }
+}
+
 export async function generateCompositeImage(photos: string[], filter: FilterType, backgroundColor: string = '#f5f5f4', layout: LayoutType = 'strip', note?: string, isPortrait: boolean = false, photoEdits?: Record<number, { zoom: number; pan: { x: number; y: number } }>): Promise<string> {
   if (photos.length === 0) throw new Error("No photos to generate image from");
 
@@ -46,20 +117,7 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
   // Background
   ctx.fillStyle = backgroundColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  // Apply Filter to Context
-  // ctx.filter is supported in most modern browsers
-  let filterString = 'none';
-  switch (filter) {
-    case 'sepia':
-      filterString = 'sepia(0.8) contrast(1.2)';
-      break;
-    case 'bw':
-      filterString = 'grayscale(1) contrast(1.1)';
-      break;
-    case 'vintage':
-      filterString = 'sepia(0.4) saturate(1.5) contrast(0.9) brightness(1.1)';
-      break;
-  }
+
 
   // ctx.filter = filterString; // Moved inside loop
 
@@ -119,20 +177,20 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
     // Apply User Zoom
     ctx.scale(zoom, zoom);
     
-    // Apply Filter to Context inside the loop for better compatibility
-    ctx.filter = filterString;
-    
     // Draw Image Centered (offset by simple half-size)
     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
     
-    // Reset filter
-    ctx.filter = 'none';
-    
     ctx.restore();
+
+    // 3. Apply Filter Manually (Pixel Manipulation)
+    if (filter !== 'none') {
+        const imageData = ctx.getImageData(x, y, photoWidth, photoHeight);
+        applyManualFilter(imageData, filter);
+        ctx.putImageData(imageData, x, y);
+    }
   });
 
-  // Reset filter for text/branding
-  ctx.filter = 'none';
+
 
   // Branding
   const isDark = backgroundColor === '#000000' || backgroundColor === '#1c1917' || backgroundColor === '#745e59';
