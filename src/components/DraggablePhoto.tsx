@@ -13,9 +13,10 @@ interface DraggablePhotoProps {
   className?: string;
   style?: React.CSSProperties;
   interactive?: boolean;
+  imageClassName?: string;
 }
 
-export function DraggablePhoto({ src, zoom, pan, onUpdate, className, style, interactive = true }: DraggablePhotoProps) {
+export function DraggablePhoto({ src, zoom, pan, onUpdate, className, style, interactive = true, imageClassName }: DraggablePhotoProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -186,7 +187,7 @@ export function DraggablePhoto({ src, zoom, pan, onUpdate, className, style, int
                 src={src} 
                 alt="Photo"
                 onLoad={handleImageLoad}
-                className="max-w-none origin-center will-change-transform"
+                className={cn("max-w-none origin-center will-change-transform", imageClassName)}
                 style={{
                     width: constraints ? constraints.baseW : '100%',
                     height: constraints ? constraints.baseH : '100%',

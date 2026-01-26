@@ -60,7 +60,8 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
       filterString = 'sepia(0.4) saturate(1.5) contrast(0.9) brightness(1.1)';
       break;
   }
-  ctx.filter = filterString;
+
+  // ctx.filter = filterString; // Moved inside loop
 
   // Draw Photos
   const loadImages = photos.map(src => {
@@ -118,8 +119,14 @@ export async function generateCompositeImage(photos: string[], filter: FilterTyp
     // Apply User Zoom
     ctx.scale(zoom, zoom);
     
+    // Apply Filter to Context inside the loop for better compatibility
+    ctx.filter = filterString;
+    
     // Draw Image Centered (offset by simple half-size)
     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    
+    // Reset filter
+    ctx.filter = 'none';
     
     ctx.restore();
   });

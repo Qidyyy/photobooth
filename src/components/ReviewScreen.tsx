@@ -325,9 +325,9 @@ export function ReviewScreen({ photos, onRetake, onBack, onSave, initialLayout, 
                                 className={cn(
                                     "bg-stone-100", // Removed relative/overflow here as component has it? Actually DraggablePhoto has relative/overflow.
                                     "animate-in fade-in zoom-in-95 duration-300 fill-mode-backwards",
-                                    baseDimensions.targetIsPortrait ? "aspect-[3/4]" : "aspect-[4/3]",
-                                    filterClass
+                                    baseDimensions.targetIsPortrait ? "aspect-[3/4]" : "aspect-[4/3]"
                                 )}
+                                imageClassName={filterClass}
                                 style={{
                                     animationDelay: `${index * 50}ms`,
                                     borderRadius: 4 * scale
